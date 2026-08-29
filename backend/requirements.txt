@@ -1,0 +1,24 @@
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+pydantic==2.*
+pydantic-settings==2.*
+supabase==2.*
+python-dotenv==1.*
+python-multipart==0.0.*
+httpx==0.28.*
+
+# OCR / Computer Vision
+paddleocr>=3.0
+paddlepaddle>=3.0
+opencv-python-headless>=4.8,<5.0
+numpy>=1.26
+Pillow>=10.0
+piexif>=1.1.3
+python-dateutil>=2.9.0
+deepface>=0.0.92
+tf-keras
+
+# Testing
+pytest==8.*
+pytest-asyncio==0.25.*
+piexif>=1.1.3

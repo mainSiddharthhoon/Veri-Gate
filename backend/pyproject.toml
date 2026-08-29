@@ -1,0 +1,9 @@
+[project]
+name = "verigate-backend"
+version = "0.1.0"
+description = "VeriGate — AI-Powered Identity & Document Screening System"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
