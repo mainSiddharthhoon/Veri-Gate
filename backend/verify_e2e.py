@@ -129,19 +129,9 @@ def verify():
         # ---------------------------------------------------------
         print("\n[Phase 5] Running Face Verification...")
         
-        # We must extract the document photo region first, as DeepFace expects a face image
-        import cv2
-        import numpy as np
-        
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        # Using the fallback coordinates from tampering_core.py
-        doc_face = img_cv[200:450, 60:260]
-        _, doc_face_buf = cv2.imencode(".jpg", doc_face)
-        doc_face_bytes = doc_face_buf.tobytes()
-
-        # For the live image in this test, we just use the same cropped face
-        live_face_bytes = doc_face_bytes
+        # Now the backend handles cropping server-side
+        doc_face_bytes = image_bytes
+        live_face_bytes = image_bytes
 
         face_response = client.post(
             "/api/face/verify",
@@ -165,6 +155,28 @@ def verify():
         else:
             print(f"[FAIL] Face Verification failed: {face_response.text}")
 
+        # ---------------------------------------------------------
+        # Phase 6: Risk Scoring
+        # ---------------------------------------------------------
+        print("\n[Phase 6] Running Risk Scoring...")
+        risk_response = client.post(f"/api/risk/assess/{session_id}")
+        
+        if risk_response.status_code == 200:
+            risk_data = risk_response.json()
+            assessment = risk_data.get("assessment", {})
+            factors = risk_data.get("factors", [])
+            
+            print(f"[OK] Risk Scoring complete.")
+            print(f"   Score: {assessment.get('risk_score')}")
+            print(f"   Level: {assessment.get('risk_level')}")
+            print(f"   Decision: {assessment.get('decision')}")
+            print(f"   Summary: {assessment.get('summary')}")
+            print("   Factors:")
+            for f in factors:
+                print(f"      - [{f['severity']}] {f['factor_name']} (Source: {f['factor_source']}) -> +{f['score_contribution']}")
+                print(f"        Reason: {f['message']}")
+        else:
+            print(f"[FAIL] Risk Scoring failed: {risk_response.text}")
             
         print("-" * 50)
         print("Verification Completed Successfully.")

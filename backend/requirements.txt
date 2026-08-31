@@ -10,7 +10,7 @@ httpx==0.28.*
 # OCR / Computer Vision
 paddleocr>=3.0
 paddlepaddle>=3.0
-opencv-python-headless>=4.8,<5.0
+opencv-python==4.10.0.84
 numpy>=1.26
 Pillow>=10.0
 piexif>=1.1.3

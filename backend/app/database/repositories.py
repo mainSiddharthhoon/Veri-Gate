@@ -78,7 +78,7 @@ def get_document_by_session(db: Client, session_id: str) -> dict | None:
         .maybe_single()
         .execute()
     )
-    return result.data
+    return result.data if result else None
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ def get_validation_checks(db: Client, validation_result_id: str) -> list[dict]:
         .eq("validation_result_id", validation_result_id)
         .execute()
     )
-    return result.data
+    return result.data if result else []
 
 
 def create_validation_result(db: Client, data: dict[str, Any]) -> dict:
@@ -178,7 +178,7 @@ def get_face_verification_by_session(db: Client, session_id: str) -> dict | None
         .maybe_single()
         .execute()
     )
-    return result.data
+    return result.data if result else None
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ def get_risk_assessment_by_session(db: Client, session_id: str) -> dict | None:
         .maybe_single()
         .execute()
     )
-    return result.data
+    return result.data if result else None
 
 
 def get_risk_factors(db: Client, risk_assessment_id: str) -> list[dict]:
@@ -205,6 +205,18 @@ def get_risk_factors(db: Client, risk_assessment_id: str) -> list[dict]:
         .eq("risk_assessment_id", risk_assessment_id)
         .execute()
     )
+    return result.data if result else []
+
+def create_risk_assessment(db: Client, data: dict[str, Any]) -> dict:
+    """Insert a new risk assessment and return the created row."""
+    result = db.table("risk_assessments").insert(data).execute()
+    return result.data[0]
+
+def create_risk_factors(db: Client, factors: list[dict[str, Any]]) -> list[dict]:
+    """Insert multiple risk factors and return the created rows."""
+    if not factors:
+        return []
+    result = db.table("risk_factors").insert(factors).execute()
     return result.data
 
 
@@ -221,7 +233,7 @@ def list_reference_documents(db: Client, *, limit: int = 50) -> list[dict]:
         .limit(limit)
         .execute()
     )
-    return result.data
+    return result.data if result else []
 
 
 def find_reference_document(
@@ -240,7 +252,7 @@ def find_reference_document(
     if issuing_country:
         query = query.eq("issuing_country", issuing_country)
     result = query.maybe_single().execute()
-    return result.data
+    return result.data if result else None
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +274,7 @@ def get_ocr_result_by_session(db: Client, session_id: str) -> dict | None:
         .maybe_single()
         .execute()
     )
-    return result.data
+    return result.data if result else None
 
 
 # ---------------------------------------------------------------------------
@@ -283,4 +295,3 @@ def create_audit_entry(db: Client, data: dict[str, Any]) -> dict:
     """Insert a new audit log entry and return the created row."""
     result = db.table("audit_log").insert(data).execute()
     return result.data[0]
-

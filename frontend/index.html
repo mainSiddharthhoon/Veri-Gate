@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VeriGate — Identity Verification Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+  // ----------------------------------------------------------------------
+  // FRONTEND-ONLY FIX: Prevent VS Code Live Server from reloading the page
+  // ----------------------------------------------------------------------
+  // When the backend processes images (e.g., cropping the face), it saves
+  // temporary files to the disk. Live Server detects these changes and 
+  // sends a 'reload' command via WebSocket about 5-10 seconds into the run.
+  // This intercepts that WebSocket connection and drops the reload command.
+  if ('WebSocket' in window) {
+    const OriginalWebSocket = window.WebSocket;
+    window.WebSocket = function(url, protocols) {
+      const ws = new OriginalWebSocket(url, protocols);
+      let onmessageHandler = null;
+      Object.defineProperty(ws, 'onmessage', {
+        get() { return onmessageHandler; },
+        set(handler) {
+          onmessageHandler = function(msg) {
+            if (typeof msg.data === 'string' && msg.data.includes('reload')) {
+              console.warn('Blocked Live Server from reloading the page mid-screening.');
+              return; // Drop the reload message!
+            }
+            if (handler) return handler.call(ws, msg);
+          };
+        }
+      });
+      return ws;
+    };
+    window.WebSocket.prototype = OriginalWebSocket.prototype;
+  }
+</script>
+<style>
+  :root{
+    --void:#08090b; --panel:#131519; --ink:#e9eaec; --ink-dim:#9a9ea6; --line:#22252b;
+    --crimson:#e13a3a; --crimson-deep:#6e1220; --crimson-glow:#ff5a4f;
+    --verified:#7a9b5c; --amber:#c9a24b;
+    --font-sans: "Inter","Segoe UI",ui-sans-serif,system-ui,sans-serif;
+    --font-mono: "SFMono-Regular","Consolas",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--void); scroll-behavior:smooth;}
+  body{margin:0; background:var(--void); color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  ::selection{background:var(--crimson); color:#fff;}
+  ::-webkit-scrollbar{width:10px;}
+  ::-webkit-scrollbar-track{background:var(--void);}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit; border:none; cursor:pointer;}
+  .mono{font-family:var(--font-mono);}
+  .glass{
+    background:rgba(255,255,255,0.035);
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---------- Navbar ---------- */
+  .navbar-wrap{position:fixed; top:16px; left:0; right:0; z-index:50; display:flex; justify-content:center; padding:0 16px;}
+  .navbar{width:100%; max-width:760px; display:flex; align-items:center; justify-content:space-between; gap:24px; border-radius:999px; padding:10px 20px;}
+  .brand{display:flex; align-items:center; gap:8px;}
+  .brand span{font-size:13px; letter-spacing:.14em; font-family:var(--font-mono);}
+  .nav-links{display:none; gap:28px; list-style:none; margin:0; padding:0;}
+  .nav-links a{font-size:13px; color:var(--ink-dim); transition:color .3s;}
+  .nav-links a:hover{color:var(--ink);}
+  @media(min-width:768px){.nav-links{display:flex;}}
+  .btn-crimson{position:relative; overflow:hidden; border-radius:999px; background:var(--crimson); color:#fff; padding:8px 18px; font-size:13px; font-weight:500; transition:transform .3s;}
+  .btn-crimson:hover{transform:scale(1.03);}
+  .btn-crimson:active{transform:scale(.98);}
+
+  /* ---------- ScanSpine ---------- */
+  .scan-spine{position:fixed; right:20px; top:50%; transform:translateY(-50%); z-index:40; display:none; align-items:center; gap:16px; pointer-events:none;}
+  @media(min-width:1024px){.scan-spine{display:flex;}}
+  .spine-labels{display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:var(--font-mono); font-size:10px; letter-spacing:.2em; color:var(--ink-dim);}
+  .spine-labels span{opacity:.25; transition:all .5s;}
+  .spine-labels span.active{opacity:1; color:var(--crimson-glow); transform:translateX(-2px);}
+  .spine-track{position:relative; height:224px; width:1px; background:var(--line);}
+  .spine-dot{position:absolute; left:-3px; top:0; height:6px; width:6px; border-radius:999px; background:var(--crimson); box-shadow:0 0 12px 3px rgba(225,58,58,.6);}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative; min-height:100svh; display:flex; align-items:center; overflow:hidden; padding:112px 0 64px;}
+  .hero-bg{position:absolute; inset:0; pointer-events:none;}
+  .hero-bg .b1{position:absolute; left:-160px; top:0; height:560px; width:560px; border-radius:50%; background:var(--crimson-deep); opacity:.3; filter:blur(140px);}
+  .hero-bg .b2{position:absolute; right:-128px; bottom:0; height:480px; width:480px; border-radius:50%; background:var(--crimson); opacity:.1; filter:blur(160px);}
+  .wrap{max-width:1280px; margin:0 auto; padding:0 24px;}
+  @media(min-width:1024px){.wrap{padding:0 40px;}}
+  .hero-grid{position:relative; z-index:1; display:grid; grid-template-columns:1fr; gap:56px; align-items:center;}
+  @media(min-width:1024px){.hero-grid{grid-template-columns:1.05fr .95fr; gap:32px;}}
+  .eyebrow{display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:.22em; color:var(--crimson-glow); margin-bottom:24px;}
+  .eyebrow .dot{height:6px; width:6px; border-radius:999px; background:var(--crimson); box-shadow:0 0 10px 2px rgba(225,58,58,.7);}
+  .hero h1{font-size:clamp(2.4rem,7vw,4.6rem); line-height:.97; letter-spacing:-0.02em; margin:0; max-width:560px;}
+  .hero h1 .grad{background:linear-gradient(120deg,var(--crimson-glow),var(--crimson)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p.sub{max-width:420px; margin-top:28px; font-size:15px; line-height:1.6; color:var(--ink-dim);}
+  .hero-ctas{display:flex; flex-wrap:wrap; gap:16px; margin-top:36px;}
+  .btn-ink{display:inline-flex; align-items:center; gap:8px; border-radius:999px; background:var(--ink); color:var(--void); padding:12px 26px; font-size:14px; font-weight:500; transition:transform .3s;}
+  .btn-ink:hover{transform:scale(1.03);}
+  .btn-ghost{display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:12px 26px; font-size:14px; color:var(--ink-dim); transition:color .3s;}
+  .btn-ghost:hover{color:var(--ink);}
+  .hero-stats{display:flex; gap:40px; margin-top:56px; border-top:1px solid var(--line); padding-top:24px;}
+  .hero-stats .num{font-family:var(--font-mono); font-size:24px;}
+  .hero-stats .lbl{margin-top:4px; font-size:12px; color:var(--ink-dim);}
+  .hero-frame{position:relative; aspect-ratio:4/5; width:100%; max-width:420px; margin:0 auto; border-radius:24px; overflow:hidden; border:1px solid var(--line);}
+  @media(min-width:1024px){.hero-frame{max-width:none; margin:0 0 0 auto;}}
+  .hero-frame video{width:100%; height:100%; object-fit:cover; display:block;}
+  .hero-frame .overlay-grad{position:absolute; inset:0; background:linear-gradient(to bottom, rgba(110,18,32,.3), transparent 40%, var(--void) 100%);}
+  .hero-fallback{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; background:radial-gradient(circle at 50% 30%, rgba(225,58,58,.18), transparent 60%);}
+  .hero-fallback p{max-width:220px; font-size:12px; color:var(--ink-dim); margin:0;}
+  .hero-badge{position:absolute; left:16px; right:16px; bottom:16px; display:flex; align-items:center; justify-content:space-between; border-radius:16px; padding:10px 16px;}
+  .hero-badge .live{display:flex; align-items:center; gap:6px; color:var(--verified); font-family:var(--font-mono); font-size:11px;}
+  .hero-badge .live .dot{height:6px;width:6px;border-radius:999px;background:var(--verified);}
+
+  /* ---------- Section shells ---------- */
+  section{position:relative;}
+  .section-tag{font-family:var(--font-mono); font-size:11px; letter-spacing:.22em; color:var(--crimson-glow);}
+  .section-title{font-size:clamp(1.8rem,4vw,2.6rem); letter-spacing:-0.02em; margin:20px 0 0; color:var(--ink);}
+
+  /* Problem */
+  .problem{padding:128px 0; max-width:960px; margin:0 auto;}
+  .problem-text{max-width:760px; font-size:clamp(1.6rem,4vw,2.6rem); line-height:1.2; letter-spacing:-0.01em; margin-top:24px;}
+  .problem-text span{opacity:.12; transition:opacity .3s;}
+  .problem-points{margin-top:80px; display:grid; gap:32px; border-top:1px solid var(--line); padding-top:48px;}
+  @media(min-width:768px){.problem-points{grid-template-columns:repeat(3,1fr);}}
+  .problem-points h3{font-size:15px; font-weight:500; margin:0;}
+  .problem-points p{margin-top:8px; font-size:14px; line-height:1.6; color:var(--ink-dim);}
+
+  /* Pipeline */
+  .pipeline{height:100vh; overflow:hidden; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .pipeline-grid{max-width:1280px; margin:0 auto; height:100%; display:grid; grid-template-columns:1fr; align-items:center; gap:40px; padding:0 24px;}
+  @media(min-width:1024px){.pipeline-grid{grid-template-columns:.85fr 1.15fr; gap:64px; padding:0 40px;}}
+  .stage-index{display:none; flex-direction:column; gap:12px;}
+  @media(min-width:1024px){.stage-index{display:flex;}}
+  .stage-index-row{display:flex; align-items:center; gap:16px; padding:8px 0; opacity:.32; transition:opacity .5s;}
+  .stage-index-row.active{opacity:1;}
+  .stage-index-row .tag{font-family:var(--font-mono); font-size:11px; letter-spacing:.16em; color:var(--ink-dim);}
+  .stage-index-row .rule{height:1px; flex:1; background:var(--line); transition:background .5s;}
+  .stage-index-row.active .rule{background:var(--crimson);}
+  .stage-panels{position:relative; min-height:320px;}
+  .stage-panel{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:18px; border-radius:24px; padding:40px; opacity:0; visibility:hidden;}
+  .stage-panel.active{opacity:1; visibility:visible;}
+  .stage-icon{display:flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:999px; background:rgba(225,58,58,.1); box-shadow:inset 0 0 0 1px rgba(225,58,58,.3);}
+  .stage-panel .tag{font-family:var(--font-mono); font-size:11px; letter-spacing:.2em; color:var(--crimson-glow);}
+  .stage-panel h3{font-size:clamp(1.6rem,3vw,2.2rem); letter-spacing:-.02em; margin:0; max-width:420px;}
+  .stage-panel p{max-width:420px; font-size:15px; line-height:1.6; color:var(--ink-dim); margin:0;}
+  .pipeline-dots{position:absolute; bottom:24px; left:0; right:0; display:flex; justify-content:center; gap:8px;}
+  @media(min-width:1024px){.pipeline-dots{display:none;}}
+  .pipeline-dots span{height:6px; width:6px; border-radius:999px; background:var(--line); transition:all .5s;}
+  .pipeline-dots span.active{width:24px; background:var(--crimson);}
+
+  /* How it works */
+  .how{padding:128px 0; overflow:hidden;}
+  .how-bg-word{position:absolute; left:50%; top:32px; transform:translateX(-50%); white-space:nowrap; font-size:min(22vw,13rem); font-weight:500; line-height:1; color:rgba(255,255,255,.025); user-select:none;}
+  .how-inner{position:relative; max-width:1080px; margin:0 auto;}
+  .how h2{max-width:480px;}
+  .how-steps{margin-top:64px; display:grid; gap:24px;}
+  @media(min-width:640px){.how-steps{grid-template-columns:repeat(2,1fr);}}
+  .step-card{border-radius:24px; padding:32px;}
+  .step-card .n{font-family:var(--font-mono); font-size:14px; color:var(--crimson-glow);}
+  .step-card h3{margin:16px 0 0; font-size:20px;}
+  .step-card p{margin-top:8px; font-size:14px; line-height:1.6; color:var(--ink-dim);}
+
+  /* Product preview */
+  .product{padding:128px 0; max-width:1080px; margin:0 auto;}
+  .product-grid{display:grid; gap:56px; align-items:center;}
+  @media(min-width:1024px){.product-grid{grid-template-columns:1fr 1fr;}}
+  .product p.body{max-width:420px; margin-top:20px; font-size:15px; line-height:1.6; color:var(--ink-dim);}
+  .preview-panel{border-radius:24px; padding:24px;}
+  .preview-panel .top{display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:var(--ink-dim);}
+  .preview-panel .top .approved{color:var(--verified);}
+  .preview-score{display:flex; align-items:flex-end; gap:12px; margin-top:24px;}
+  .preview-score .big{font-size:56px; font-weight:500;}
+  .preview-score .lbl{margin-bottom:8px; font-size:13px; color:var(--ink-dim);}
+  .preview-bar{margin-top:12px; height:6px; width:100%; border-radius:999px; background:var(--line); overflow:hidden;}
+  .preview-bar div{height:100%; width:12%; border-radius:999px; background:var(--verified);}
+  .preview-checks{margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;}
+  .preview-checks div{display:flex; align-items:center; gap:8px; color:var(--ink-dim);}
+  .preview-checks .dot{height:6px;width:6px;border-radius:999px;background:var(--verified);}
+
+  /* Final CTA */
+  .final-cta{position:relative; overflow:hidden; padding:160px 24px; text-align:center;}
+  .final-cta .glow{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); height:420px; width:420px; border-radius:50%; background:var(--crimson); opacity:.15; filter:blur(160px); pointer-events:none;}
+  .final-cta-inner{position:relative; max-width:640px; margin:0 auto;}
+  .final-cta h2{font-size:clamp(2rem,5vw,3rem); letter-spacing:-.02em; margin:24px 0 0;}
+  footer{border-top:1px solid var(--line); padding:32px 24px; text-align:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:var(--ink-dim);}
+
+  /* ---------- Screening ---------- */
+  .page{max-width:900px; margin:0 auto; padding:144px 24px 96px;}
+  @media(min-width:1024px){.page{padding-left:40px; padding-right:40px;}}
+  .page-tag{display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:.2em; color:var(--crimson-glow); margin-bottom:40px;}
+  .page h1{font-size:clamp(1.8rem,4vw,2.4rem); letter-spacing:-.02em; max-width:520px; margin:0;}
+  .page p.lead{max-width:420px; margin-top:16px; font-size:14px; line-height:1.6; color:var(--ink-dim);}
+  .upload-grid{margin-top:48px; display:grid; gap:24px;}
+  @media(min-width:640px){.upload-grid{grid-template-columns:1fr 1fr;}}
+  .upload-panel{position:relative; aspect-ratio:4/3; border-radius:24px; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer; overflow:hidden; transition:box-shadow .3s;}
+  .upload-panel:hover{box-shadow:0 0 50px -10px rgba(225,58,58,.35);}
+  .upload-panel.dragging{box-shadow:0 0 50px -10px rgba(225,58,58,.5); outline:2px solid var(--crimson);}
+  .upload-icon{display:flex; height:48px; width:48px; align-items:center; justify-content:center; border-radius:999px; background:rgba(225,58,58,.1); box-shadow:inset 0 0 0 1px rgba(225,58,58,.25);}
+  .upload-panel .lbl{margin-top:16px; font-size:14px;}
+  .upload-panel .hint{margin-top:6px; max-width:220px; font-size:12px; color:var(--ink-dim);}
+  .upload-panel .browse{margin-top:16px; display:flex; align-items:center; gap:6px; font-size:11px; color:rgba(154,158,166,.7);}
+  .upload-panel img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .upload-panel .img-grad{position:absolute; inset:0; background:linear-gradient(to top, rgba(8,9,11,.8), transparent 50%, rgba(8,9,11,.2));}
+  .upload-panel .remove-btn{position:absolute; top:12px; right:12px; z-index:2; border-radius:999px; padding:6px; color:var(--ink-dim);}
+  .upload-panel .remove-btn:hover{color:var(--crimson-glow);}
+  .upload-panel .filerow{position:relative; z-index:1; margin-top:auto; width:100%; display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim);}
+  .upload-panel .filerow .ready{display:flex; align-items:center; gap:6px; color:var(--verified); flex-shrink:0;}
+  .footer-actions{margin-top:48px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line); padding-top:32px;}
+  .footer-actions .count{font-family:var(--font-mono); font-size:12px; color:var(--ink-dim);}
+  .btn-crimson-lg{display:inline-flex; align-items:center; gap:8px; border-radius:999px; background:var(--crimson); color:#fff; padding:14px 28px; font-size:14px; font-weight:500; transition:all .3s;}
+  .btn-crimson-lg:disabled{opacity:.3; cursor:not-allowed;}
+  .btn-crimson-lg:not(:disabled):hover{transform:scale(1.03);}
+
+  /* ---------- Processing ---------- */
+  .processing-view{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;}
+  .proc-ring-wrap{position:relative; display:flex; height:112px; width:112px; align-items:center; justify-content:center; margin-bottom:56px;}
+  .pulse-ring{position:absolute; inset:0; border-radius:999px; border:1px solid rgba(225,58,58,.4);}
+  .ring-static{position:absolute; inset:0; border-radius:999px; border:1px solid var(--line);}
+  .proc-pct{display:flex; height:64px; width:64px; align-items:center; justify-content:center; border-radius:999px; background:rgba(225,58,58,.1); box-shadow:inset 0 0 0 1px rgba(225,58,58,.3);}
+  .proc-pct span{font-family:var(--font-mono); font-size:18px; color:var(--crimson-glow);}
+  .proc-title{font-family:var(--font-mono); font-size:11px; letter-spacing:.22em; color:var(--ink-dim); text-align:center; margin-bottom:32px;}
+  .stage-list{width:100%; max-width:420px; display:flex; flex-direction:column; gap:20px;}
+  .stage-row{display:flex; align-items:center; gap:16px;}
+  .stage-check{display:flex; height:24px; width:24px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--line); transition:all .3s;}
+  .stage-check.running{border-color:var(--crimson); background:rgba(225,58,58,.15);}
+  .stage-check.done{border-color:var(--verified); background:rgba(122,155,92,.15);}
+  .stage-body{flex:1;}
+  .stage-body .toprow{display:flex; justify-content:space-between;}
+  .stage-body .name{font-size:13px; color:var(--ink-dim); transition:color .3s;}
+  .stage-body .name.active{color:var(--ink);}
+  .stage-body .sub{font-size:11px; color:var(--ink-dim);}
+  .stage-track{margin-top:6px; height:3px; width:100%; border-radius:999px; background:var(--line); overflow:hidden;}
+  .stage-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--crimson),var(--crimson-glow)); transition:width .85s ease-in-out;}
+
+  /* ---------- Results ---------- */
+  .decision-badge{border-radius:999px; padding:4px 14px; font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; box-shadow:inset 0 0 0 1px;}
+  .decision-badge.approved{color:var(--verified); background:rgba(122,155,92,.1); box-shadow:inset 0 0 0 1px rgba(122,155,92,.3);}
+  .decision-badge.review{color:var(--amber); background:rgba(201,162,75,.1); box-shadow:inset 0 0 0 1px rgba(201,162,75,.3);}
+  .decision-badge.declined{color:var(--crimson-glow); background:rgba(225,58,58,.1); box-shadow:inset 0 0 0 1px rgba(225,58,58,.3);}
+  .report-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;}
+  .report-panel{border-radius:24px; padding:32px; margin-top:24px;}
+  .report-hero{display:grid; gap:32px; align-items:center;}
+  @media(min-width:640px){.report-hero{grid-template-columns:auto 1fr;}}
+  .gauge-wrap{position:relative; display:flex; height:208px; width:208px; align-items:center; justify-content:center;}
+  .gauge-wrap svg{transform:rotate(-90deg);}
+  .gauge-center{position:absolute; display:flex; flex-direction:column; align-items:center;}
+  .gauge-center .score{font-size:56px; line-height:1;}
+  .gauge-center .lbl{margin-top:4px; font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:var(--ink-dim);}
+  .identity-grid{margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; border-top:1px solid var(--line); padding-top:24px;}
+  @media(min-width:640px){.identity-grid{grid-template-columns:repeat(3,1fr);}}
+  .identity-grid .f-lbl{font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; color:var(--ink-dim);}
+  .identity-grid .f-val{margin-top:4px; font-size:13px;}
+  .two-col{display:grid; gap:24px; margin-top:24px;}
+  @media(min-width:1024px){.two-col{grid-template-columns:1fr 1fr;}}
+  .checks-row{display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(34,37,43,.7); padding:12px 0;}
+  .checks-row:last-child{border-bottom:none; padding-bottom:0;}
+  .checks-row .lbl{font-size:13px; color:var(--ink-dim);}
+  .checks-row .pass{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--verified);}
+  .checks-row .fail{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--crimson-glow);}
+  .face-score{display:flex; align-items:flex-end; gap:12px; margin-top:20px;}
+  .face-score .big{font-size:36px;}
+  .face-score .lbl{margin-bottom:4px; font-size:12px; color:var(--ink-dim);}
+  .risk-factors{margin-top:16px; display:flex; flex-direction:column; gap:10px;}
+  .risk-factors li{display:flex; gap:10px; font-size:13px; color:var(--ink-dim); list-style:none;}
+  .risk-factors .bullet{margin-top:6px; height:6px; width:6px; flex-shrink:0; border-radius:999px; background:var(--crimson);}
+  .rerun-link{margin-top:40px; display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-dim); background:none;}
+  .rerun-link:hover{color:var(--ink);}
+  .evidence-image{display:none; width:100%; max-width:560px; margin-top:20px; border:1px solid var(--line); border-radius:16px;}
+  .processing-error{max-width:420px; margin:20px 0 0; color:var(--crimson-glow); text-align:center; font-size:13px; line-height:1.5;}
+
+  .icon{width:16px; height:16px; display:inline-block; vertical-align:middle;}
+  .fade-item{opacity:0; transform:translateY(16px);}
+</style>
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<div class="navbar-wrap">
+  <nav class="navbar glass" id="navbar">
+    <a href="#" class="brand" onclick="go('landing');return false;">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--crimson)" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>VERIGATE</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#pipeline" onclick="go('landing')">Pipeline</a></li>
+      <li><a href="#how-it-works" onclick="go('landing')">How it works</a></li>
+      <li><a href="#product" onclick="go('landing')">Product</a></li>
+    </ul>
+    <button class="btn-crimson" onclick="go('screen')">Start screening</button>
+  </nav>
+</div>
+
+<!-- ============ SCAN SPINE ============ -->
+<div class="scan-spine" id="scanSpine">
+  <div class="spine-labels" id="spineLabels"></div>
+  <div class="spine-track"><div class="spine-dot" id="spineDot"></div></div>
+</div>
+
+<!-- ============ LANDING VIEW ============ -->
+<div class="view active" id="view-landing">
+
+  <section class="hero" id="hero" data-stage="hero">
+    <div class="hero-bg"><div class="b1"></div><div class="b2"></div></div>
+    <div class="wrap">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow fade-item"><span class="dot"></span>IDENTITY VERIFICATION, RUN LIKE A SECURITY OPERATION</div>
+          <h1>
+            <span class="fade-item" style="display:block;">Every document</span>
+            <span class="fade-item grad" style="display:block;">tells on itself.</span>
+          </h1>
+          <p class="sub fade-item">VeriGate reads, cross-checks and scores identity documents in one continuous pipeline — OCR, MRZ, forensic tampering analysis and face verification, resolved to a single risk decision in seconds.</p>
+          <div class="hero-ctas fade-item">
+            <button class="btn-ink" onclick="go('screen')">Run a screening
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg>
+            </button>
+            <a href="#pipeline" class="btn-ghost glass">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4"/></svg>
+              See the pipeline
+            </a>
+          </div>
+          <div class="hero-stats fade-item">
+            <div><div class="num mono">99.2%</div><div class="lbl">forgery detection recall</div></div>
+            <div><div class="num mono">1.8s</div><div class="lbl">median pipeline runtime</div></div>
+            <div><div class="num mono">190+</div><div class="lbl">document templates covered</div></div>
+          </div>
+        </div>
+
+        <div class="hero-frame fade-item" id="heroFrame">
+          <div class="overlay-grad"></div>
+          <video id="heroVideo" autoplay muted loop playsinline src="media/hero-character.mp4"></video>
+          <div class="hero-fallback" id="heroFallback">
+            <svg class="icon" style="width:36px;height:36px;" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.25"><circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><path d="M3 7V5a2 2 0 0 1 2-2h2M19 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M5 21H3a2 2 0 0 1-2-2v-2"/></svg>
+            <p>Drop the character clip at <code>media/hero-character.mp4</code> next to this file to render it here.</p>
+          </div>
+          <div class="hero-badge glass">
+            <span class="mono" style="font-size:11px; letter-spacing:.12em; color:var(--ink-dim);">SESSION #A21F</span>
+            <span class="live"><span class="dot"></span>LIVE</span>
+          </div>
+        </div>
+      </div>
+      <img class="evidence-image" id="elaEvidence" alt="Error-level analysis evidence" />
+    </div>
+  </section>
+
+  <section class="problem" data-stage="problem">
+    <div class="wrap" style="padding:0;">
+      <span class="section-tag">THE PROBLEM</span>
+      <p class="problem-text" id="problemText"></p>
+      <div class="problem-points">
+        <div><h3>Synthetic identities</h3><p>AI-generated faces and stitched documents pass a human glance in under two seconds.</p></div>
+        <div><h3>Template forgeries</h3><p>Leaked ID templates make convincing fakes cheap and repeatable at scale.</p></div>
+        <div><h3>Manual review debt</h3><p>Ops teams triage thousands of borderline cases with no consistent scoring standard.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pipeline" id="pipeline" data-stage="pipeline">
+    <div class="pipeline-grid">
+      <div class="stage-index" id="stageIndex"></div>
+      <div class="stage-panels" id="stagePanels"></div>
+    </div>
+    <div class="pipeline-dots" id="pipelineDots"></div>
+  </section>
+
+  <section class="how" id="how-it-works" data-stage="how">
+    <span class="how-bg-word">HOW IT RUNS</span>
+    <div class="how-inner wrap" style="padding:0;">
+      <span class="section-tag">OPERATIONAL LOOP</span>
+      <h2 class="section-title how-h2">One pipeline, four moments that matter.</h2>
+      <div class="how-steps">
+        <div class="step-card glass"><div class="n mono">01</div><h3>Capture</h3><p>Document and selfie are captured or uploaded — no proprietary hardware required.</p></div>
+        <div class="step-card glass" style="margin-top:40px;"><div class="n mono">02</div><h3>Run</h3><p>The full pipeline executes server-side in under two seconds, end to end.</p></div>
+        <div class="step-card glass"><div class="n mono">03</div><h3>Decide</h3><p>A risk score and decision are returned with the evidence that produced them.</p></div>
+        <div class="step-card glass" style="margin-top:40px;"><div class="n mono">04</div><h3>Audit</h3><p>Every screening is logged with its full evidence trail for later review.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="product" id="product" data-stage="product">
+    <div class="wrap" style="padding:0;">
+      <div class="product-grid">
+        <div>
+          <span class="section-tag">THE REPORT</span>
+          <h2 class="section-title">A decision you can defend, not just a pass or fail.</h2>
+          <p class="body">Every screening resolves to a Security Intelligence Report: the score, the decision, and the exact evidence — extracted fields, forensic findings, and face-match confidence — behind it.</p>
+          <button type="button" class="btn-ink" style="margin-top:32px;" onclick="go('screen')">Try a live screening
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg>
+          </button>
+        </div>
+        <div class="preview-panel glass">
+          <div class="top"><span>SECURITY INTELLIGENCE REPORT</span><span class="approved">APPROVED</span></div>
+          <div class="preview-score"><span class="big">12</span><span class="lbl">/ 100 risk score</span></div>
+          <div class="preview-bar"><div></div></div>
+          <div class="preview-checks">
+            <div><span class="dot"></span>MRZ checksum</div>
+            <div><span class="dot"></span>Hologram region</div>
+            <div><span class="dot"></span>Face match: 96%</div>
+            <div><span class="dot"></span>ELA: clean</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta" data-stage="cta">
+    <div class="glow"></div>
+    <div class="final-cta-inner">
+      <span class="section-tag">GET STARTED</span>
+      <h2>Screen your first document in the next two minutes.</h2>
+      <button type="button" class="btn-crimson-lg" style="margin-top:40px;" onclick="go('screen')">Start screening
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <footer>VERIGATE — IDENTITY VERIFICATION INTELLIGENCE</footer>
+</div>
+
+<!-- ============ SCREENING VIEW ============ -->
+<div class="view" id="view-screen">
+  <div class="page">
+    <div class="page-tag">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/></svg>
+      VERIFICATION WORKSTATION
+    </div>
+    <h1>Load a document and a live face to begin.</h1>
+    <p class="lead">Both are required before the pipeline can run. Files stay in this session only.</p>
+
+    <div class="upload-grid">
+      <div class="upload-panel glass" id="panelDoc" onclick="triggerFile('doc')">
+        <input type="file" id="fileDoc" accept="image/*" style="display:none" onchange="handleFile('doc', this.files)">
+        <div id="panelDocContent" style="display:contents;">
+          <div class="upload-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><path d="M2 16l4-4 4 4 6-6 4 4"/></svg></div>
+          <div class="lbl">Identity document</div>
+          <div class="hint">Passport, ID card or driver's licence — front side</div>
+          <div class="browse">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V8m0 0-3 3m3-3 3 3M4 20h16"/></svg>
+            drop file or click to browse
+          </div>
+        </div>
+      </div>
+      <div class="upload-panel glass" id="panelFace" onclick="triggerFile('face')">
+        <input type="file" id="fileFace" accept="image/*" style="display:none" onchange="handleFile('face', this.files)">
+        <div id="panelFaceContent" style="display:contents;">
+          <div class="upload-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.5"><circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div>
+          <div class="lbl">Presented face</div>
+          <div class="hint">A clear, front-facing photo or selfie</div>
+          <div class="browse">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V8m0 0-3 3m3-3 3 3M4 20h16"/></svg>
+            drop file or click to browse
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <span class="count mono" id="fileCount">0 / 2 files ready</span>
+      <button type="button" class="btn-crimson-lg" id="runBtn" disabled onclick="event.preventDefault(); event.stopPropagation(); go('processing'); return false;">Run screening
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PROCESSING VIEW ============ -->
+<div class="view" id="view-processing">
+  <div class="processing-view">
+    <div class="proc-ring-wrap">
+      <div class="pulse-ring" id="pulseRing"></div>
+      <div class="ring-static"></div>
+      <div class="proc-pct"><span id="procPct">0%</span></div>
+    </div>
+    <p class="proc-title">RUNNING VERIFICATION PIPELINE</p>
+    <div class="stage-list" id="stageList"></div>
+  </div>
+</div>
+
+<!-- ============ RESULTS VIEW ============ -->
+<div class="view" id="view-results">
+  <div class="page" style="max-width:1000px;">
+    <div class="report-head">
+      <span class="section-tag">SECURITY INTELLIGENCE REPORT</span>
+      <span class="decision-badge" id="decisionBadge"></span>
+    </div>
+
+    <div class="report-panel glass report-hero">
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 200 200" width="208" height="208">
+          <circle cx="100" cy="100" r="84" fill="none" stroke="var(--line)" stroke-width="10"/>
+          <circle id="gaugeCircle" cx="100" cy="100" r="84" fill="none" stroke="var(--crimson)" stroke-width="10" stroke-linecap="round" stroke-dasharray="527.8" stroke-dashoffset="527.8"/>
+        </svg>
+        <div class="gauge-center"><span class="score" id="scoreVal">0</span><span class="lbl">RISK / 100</span></div>
+      </div>
+      <div>
+        <p class="mono" style="font-size:12px; letter-spacing:.14em; color:var(--ink-dim); margin:0;">RISK LEVEL</p>
+        <p style="font-size:28px; margin:4px 0 0;" id="riskLevelVal"></p>
+        <div class="identity-grid" id="identityGrid"></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="report-panel glass" style="margin-top:0;">
+        <h3 style="font-size:14px; margin:0;">Validation checks</h3>
+        <div id="checksList" style="margin-top:20px;"></div>
+      </div>
+      <div class="report-panel glass" style="margin-top:0;">
+        <h3 style="font-size:14px; margin:0;">Face verification</h3>
+        <div class="face-score"><span class="big" id="faceMatchVal">0%</span><span class="lbl">document-to-selfie match</span></div>
+        <div class="preview-bar" style="margin-top:12px;"><div id="faceMatchBar" style="width:0%; background:var(--verified);"></div></div>
+        <div id="livenessRow" style="margin-top:20px; display:flex; align-items:center; gap:8px; font-size:13px;"></div>
+      </div>
+    </div>
+
+    <div class="report-panel glass">
+      <h3 style="font-size:14px; margin:0;">Tampering forensics — error-level analysis</h3>
+      <div style="display:grid; gap:24px; margin-top:20px; grid-template-columns:1fr auto;">
+        <p style="font-size:13px; line-height:1.6; color:var(--ink-dim); margin:0;" id="elaNote"></p>
+        <div style="display:flex; gap:32px;">
+          <div><p class="mono" style="font-size:10px; letter-spacing:.12em; color:var(--ink-dim); margin:0;">ELA SCORE</p><p style="font-size:20px; margin:4px 0 0;" id="elaScoreVal"></p></div>
+          <div><p class="mono" style="font-size:10px; letter-spacing:.12em; color:var(--ink-dim); margin:0;">REGIONS FLAGGED</p><p style="font-size:20px; margin:4px 0 0;" id="regionsVal"></p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-panel glass">
+      <h3 style="font-size:14px; margin:0;">Risk factors</h3>
+      <ul class="risk-factors" id="riskFactorsList"></ul>
+    </div>
+
+    <button type="button" class="rerun-link" onclick="resetSession(); go('screen')">
+      <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+      Run another screening
+    </button>
+  </div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ---------------- view routing ---------------- */
+let currentView = 'landing';
+function go(view){
+  document.getElementById('view-'+currentView).classList.remove('active');
+  document.getElementById('view-'+view).classList.add('active');
+  currentView = view;
+  window.scrollTo({top:0, behavior:'instant'});
+  if(view === 'processing') runProcessing();
+  ScrollTrigger.refresh();
+}
+
+/* hero video fallback */
+const heroVideo = document.getElementById('heroVideo');
+const heroFallback = document.getElementById('heroFallback');
+heroVideo.addEventListener('error', () => { heroVideo.style.display='none'; heroFallback.style.display='flex'; });
+heroFallback.style.display = 'none';
+
+/* ---------------- Hero entrance ---------------- */
+gsap.timeline({defaults:{ease:'power3.out'}})
+  .to('.eyebrow.fade-item', {opacity:1, y:0, duration:.7})
+  .to('.hero h1 .fade-item', {opacity:1, y:0, filter:'blur(0px)', duration:.9, stagger:.12}, '-=0.35')
+  .to('.sub.fade-item', {opacity:1, y:0, duration:.7}, '-=0.4')
+  .to('.hero-ctas.fade-item', {opacity:1, y:0, duration:.6}, '-=0.45')
+  .fromTo('#heroFrame', {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:1.3}, '-=1.1')
+  .to('.hero-stats.fade-item', {opacity:1, y:0, duration:.6}, '-=0.5');
+gsap.set('.hero h1 .fade-item', {filter:'blur(6px)'});
+
+/* hero parallax */
+gsap.to('#heroFrame', {yPercent:8, ease:'none', scrollTrigger:{trigger:'#hero', start:'top top', end:'bottom top', scrub:.6}});
+gsap.to('.hero-copy', {yPercent:-14, ease:'none', scrollTrigger:{trigger:'#hero', start:'top top', end:'bottom top', scrub:.6}});
+
+/* ---------------- Problem section text reveal ---------------- */
+const problemSentence = "Fraud does not announce itself. It arrives looking exactly like a valid document, until you know where to look.";
+const problemEl = document.getElementById('problemText');
+problemSentence.split(' ').forEach(w => {
+  const span = document.createElement('span');
+  span.textContent = w + ' ';
+  problemEl.appendChild(span);
+});
+gsap.to('#problemText span', {opacity:1, stagger:.02, scrollTrigger:{trigger:'.problem', start:'top 75%', end:'top 25%', scrub:true}});
+gsap.utils.toArray('.problem-points > div').forEach((el,i) => {
+  gsap.fromTo(el, {opacity:0, x:-24}, {opacity:1, x:0, duration:.7, delay:i*.05, scrollTrigger:{trigger:el, start:'top 85%'}});
+});
+
+/* ---------------- Pipeline pinned section ---------------- */
+const STAGES = [
+  {icon:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>', tag:'01 — OCR', title:'OCR extraction', body:'Every printed and embedded field is read directly off the document surface — name, dates, document number — before anything is cross-checked.'},
+  {icon:'<path d="M3 7V5a2 2 0 0 1 2-2h2M19 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M5 21H3a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>', tag:'02 — MRZ', title:'MRZ validation', body:'The machine-readable zone is decoded and checksummed against the visual fields, catching mismatches a glance would miss.'},
+  {icon:'<path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 1 0 8 0V6a4 4 0 0 0-4-4Z"/><path d="M6 11a6 6 0 0 0 12 0"/>', tag:'03 — FORENSICS', title:'Document forensics', body:'Error-level analysis surfaces compression artifacts left behind by edited regions — photo swaps, altered numerals, re-pasted holograms.'},
+  {icon:'<circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><rect x="2" y="2" width="20" height="20" rx="4"/>', tag:'04 — FACE', title:'Face verification', body:'A liveness check on the presented face is matched against the document photo, resistant to printed photos and screen replays.'},
+  {icon:'<path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/>', tag:'05 — RISK', title:'Risk analysis', body:'Every signal from the pipeline is weighted into a single composite score, with a clear decision and the evidence behind it.'},
+];
+
+const stageIndexEl = document.getElementById('stageIndex');
+const stagePanelsEl = document.getElementById('stagePanels');
+const pipelineDotsEl = document.getElementById('pipelineDots');
+
+STAGES.forEach((s,i) => {
+  const row = document.createElement('div');
+  row.className = 'stage-index-row' + (i===0?' active':'');
+  row.innerHTML = `<span class="tag">${s.tag}</span><span class="rule"></span>`;
+  stageIndexEl.appendChild(row);
+
+  const panel = document.createElement('div');
+  panel.className = 'stage-panel glass' + (i===0?' active':'');
+  panel.innerHTML = `<div class="stage-icon"><svg class="icon" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.5">${s.icon}</svg></div>
+    <span class="tag">${s.tag}</span><h3>${s.title}</h3><p>${s.body}</p>`;
+  stagePanelsEl.appendChild(panel);
+
+  const dot = document.createElement('span');
+  dot.className = i===0 ? 'active' : '';
+  pipelineDotsEl.appendChild(dot);
+});
+
+let pipelineActive = 0;
+ScrollTrigger.create({
+  trigger:'#pipeline', start:'top top', end:'+=' + (STAGES.length*720), pin:true, scrub:.4,
+  onUpdate(self){
+    const idx = Math.min(STAGES.length-1, Math.floor(self.progress*STAGES.length));
+    if(idx !== pipelineActive){
+      stageIndexEl.children[pipelineActive].classList.remove('active');
+      stagePanelsEl.children[pipelineActive].classList.remove('active');
+      pipelineDotsEl.children[pipelineActive].classList.remove('active');
+      pipelineActive = idx;
+      stageIndexEl.children[idx].classList.add('active');
+      stagePanelsEl.children[idx].classList.add('active');
+      pipelineDotsEl.children[idx].classList.add('active');
+    }
+  }
+});
+
+/* ---------------- How it works reveal ---------------- */
+gsap.utils.toArray('.step-card').forEach((el,i) => {
+  gsap.fromTo(el, {opacity:0, y:50}, {opacity:1, y:0, duration:.8, ease:'power3.out', delay:i*.04, scrollTrigger:{trigger:el, start:'top 88%'}});
+});
+
+/* ---------------- Product preview reveal ---------------- */
+gsap.fromTo('.preview-panel', {opacity:0, scale:.94}, {opacity:1, scale:1, duration:1, ease:'power3.out', scrollTrigger:{trigger:'.product', start:'top 70%'}});
+
+/* ---------------- ScanSpine ---------------- */
+const SPINE_STAGES = ['PROBLEM','OCR / MRZ','FORENSICS','FACE','RISK','PRODUCT'];
+const spineLabels = document.getElementById('spineLabels');
+SPINE_STAGES.forEach(s => { const sp = document.createElement('span'); sp.textContent = s; spineLabels.appendChild(sp); });
+const spineDot = document.getElementById('spineDot');
+window.addEventListener('scroll', () => {
+  if(currentView !== 'landing') return;
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? window.scrollY/scrollable : 0;
+  const trackH = document.querySelector('.spine-track').offsetHeight;
+  gsap.to(spineDot, {y:progress*trackH, duration:.4, ease:'power2.out', overwrite:true});
+  const idx = Math.min(SPINE_STAGES.length-1, Math.floor(progress*SPINE_STAGES.length));
+  [...spineLabels.children].forEach((el,i) => el.classList.toggle('active', i===idx));
+}, {passive:true});
+
+/* ---------------- Session state ---------------- */
+const session = { doc:null, face:null };
+function triggerFile(kind){ document.getElementById(kind==='doc'?'fileDoc':'fileFace').click(); }
+function handleFile(kind, files){
+  if(!files || !files[0]) return;
+  session[kind] = files[0];
+  renderPanel(kind);
+  updateFooter();
+}
+const DEFAULT_PANEL_CONTENT = {
+  doc: `<div class="upload-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><path d="M2 16l4-4 4 4 6-6 4 4"/></svg></div><div class="lbl">Identity document</div><div class="hint">Passport, ID card or driver's licence — front side</div><div class="browse"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V8m0 0-3 3m3-3 3 3M4 20h16"/></svg>drop file or click to browse</div>`,
+  face: `<div class="upload-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--crimson-glow)" stroke-width="1.5"><circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div><div class="lbl">Presented face</div><div class="hint">A clear, front-facing photo or selfie</div><div class="browse"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V8m0 0-3 3m3-3 3 3M4 20h16"/></svg>drop file or click to browse</div>`,
+};
+function renderPanel(kind){
+  const content = document.getElementById(kind==='doc'?'panelDocContent':'panelFaceContent');
+  const file = session[kind];
+  const url = URL.createObjectURL(file);
+  content.innerHTML = `
+    <img src="${url}"/>
+    <div class="img-grad"></div>
+    <button class="remove-btn glass" onclick="event.stopPropagation(); clearFile('${kind}')">
+      <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="filerow"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name}</span><span class="ready"><span class="dot" style="height:6px;width:6px;border-radius:999px;background:var(--verified);"></span>READY</span></div>`;
+}
+function clearFile(kind){
+  session[kind] = null;
+  const content = document.getElementById(kind==='doc'?'panelDocContent':'panelFaceContent');
+  content.innerHTML = DEFAULT_PANEL_CONTENT[kind];
+  updateFooter();
+}
+function updateFooter(){
+  const count = (session.doc?1:0) + (session.face?1:0);
+  document.getElementById('fileCount').textContent = count + ' / 2 files ready';
+  document.getElementById('runBtn').disabled = count < 2;
+}
+['panelDoc','panelFace'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragging'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragging'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('dragging');
+    const kind = id === 'panelDoc' ? 'doc' : 'face';
+    handleFile(kind, e.dataTransfer.files);
+  });
+});
+function resetSession(){
+  session.doc = null; session.face = null;
+  clearFile('doc'); clearFile('face');
+}
+
+/* ---------------- Real screening workflow ---------------- */
+const API_BASE = window.VERIGATE_API_BASE || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : window.location.origin);
+const PIPELINE_STAGES = [
+  {label:'OCR Extraction', sub:'Reading printed and embedded fields'},
+  {label:'MRZ Validation', sub:'Checksum + issuing authority match'},
+  {label:'Document Forensics', sub:'Error-level analysis for tampering'},
+  {label:'Face Verification', sub:'Liveness + document-to-selfie match'},
+  {label:'Risk Analysis', sub:'Composite scoring across all signals'},
+];
+
+function setStage(index, state){
+  const check = document.getElementById('check-'+index);
+  const name = document.getElementById('name-'+index);
+  const fill = document.getElementById('fill-'+index);
+  check.className = 'stage-check ' + state;
+  name.classList.toggle('active', state === 'running');
+  if(state === 'running') fill.style.width = '45%';
+  if(state === 'done') {
+    fill.style.width = '100%';
+    check.innerHTML = '<svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="var(--verified)" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
+  }
+  document.getElementById('procPct').textContent = Math.round((index + (state === 'done' ? 1 : .45)) / PIPELINE_STAGES.length * 100) + '%';
+}
+
+async function requestJson(path, options){
+  const response = await fetch(API_BASE + path, options);
+  if(response.ok) return response.json();
+  let detail = 'Request failed (' + response.status + ')';
+  try {
+    const body = await response.json();
+    detail = typeof body.detail === 'string' ? body.detail : body.detail?.message || detail;
+  } catch (_) {}
+  throw new Error(detail);
+}
+
+function stageError(message){
+  gsap.killTweensOf('#pulseRing');
+  document.getElementById('procPct').textContent = '—';
+  const existing = document.getElementById('processingError');
+  if(existing) existing.remove();
+  const messageEl = document.createElement('div');
+  messageEl.id = 'processingError';
+  messageEl.className = 'processing-error';
+  messageEl.innerHTML = `<div>${escapeHtml(message)}</div><button type="button" class="btn-crimson-lg" style="margin-top:16px;" onclick="event.preventDefault(); go('screen')">Try again</button>`;
+  document.querySelector('.processing-view').appendChild(messageEl);
+}
+
+function runProcessing(){
+  const list = document.getElementById('stageList');
+  list.innerHTML = '';
+  PIPELINE_STAGES.forEach((s,i) => {
+    const row = document.createElement('div');
+    row.className = 'stage-row';
+    row.innerHTML = `<div class="stage-check" id="check-${i}"></div>
+      <div class="stage-body">
+        <div class="toprow"><span class="name" id="name-${i}">${s.label}</span><span class="sub">${s.sub}</span></div>
+        <div class="stage-track"><div class="stage-fill" id="fill-${i}"></div></div>
+      </div>`;
+    list.appendChild(row);
+  });
+  document.getElementById('procPct').textContent = '0%';
+  document.getElementById('processingError')?.remove();
+  gsap.set('#pulseRing', {scale:1, opacity:1});
+  gsap.to('#pulseRing', {scale:1.4, opacity:0, duration:1.8, repeat:-1, ease:'power2.out'});
+  executeScreening().catch(error => stageError(error.message || 'The screening could not be completed.'));
+}
+
+async function executeScreening(){
+  setStage(0, 'running');
+  const ocrData = new FormData();
+  ocrData.append('file', session.doc);
+  ocrData.append('document_type', 'passport');
+  const ocr = await requestJson('/api/ocr/extract', {method:'POST', body:ocrData});
+  const sessionId = ocr.processing && ocr.processing.session_id;
+  if(!sessionId) throw new Error((ocr.processing && ocr.processing.errors || []).join(' ') || 'The server did not create a screening session.');
+  session.sessionId = sessionId;
+  setStage(0, 'done');
+  // Validation and tampering are completed inside the OCR endpoint.
+  setStage(1, 'done');
+  setStage(2, 'done');
+
+  setStage(3, 'running');
+  const faceData = new FormData();
+  faceData.append('document_image', session.doc);
+  faceData.append('live_image', session.face);
+  faceData.append('session_id', sessionId);
+  const face = await requestJson('/api/face/verify', {method:'POST', body:faceData});
+  setStage(3, 'done');
+
+  setStage(4, 'running');
+  const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), {method:'POST'});
+  const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId));
+  setStage(4, 'done');
+  session.report = normalizeReport(screening, ocr, face, risk);
+  setTimeout(() => go('results'), 200);
+}
+
+function normalizeReport(screening, ocr, face, risk){
+  const document = screening.document || ocr.extracted_fields || {};
+  const validation = screening.validation || {};
+  const tampering = screening.tampering || {};
+  const faceResult = screening.face_verification || face || {};
+  const assessment = screening.risk_assessment || risk.assessment || {};
+  const field = (label, value) => ({field:label, value:value || 'Not available'});
+  return {
+    riskScore: Number(assessment.risk_score || 0),
+    riskLevel: String(assessment.risk_level || 'unknown'),
+    decision: String(assessment.decision || 'review'),
+    identity: [field('Full name', [document.surname, document.given_names].filter(Boolean).join(', ')), field('Document no.', document.document_number), field('Nationality', document.nationality), field('Date of birth', document.date_of_birth), field('Expiry date', document.date_of_expiry), field('Issuing state', document.issuing_country)],
+    checks: validation.checks || [],
+    tampering: {score: Number(tampering.tamper_score || 0), suspicious: Boolean(tampering.is_suspicious), signals: tampering.signals || []},
+    face: faceResult,
+    riskFactors: assessment.factors || risk.factors || [],
+  };
+}
+
+function escapeHtml(value){ return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
+
+function renderResults(){
+  const r = session.report;
+  if(!r) return;
+
+  const badge = document.getElementById('decisionBadge');
+  badge.textContent = r.decision.toUpperCase();
+  badge.className = 'decision-badge ' + (r.decision === 'approve' ? 'approved' : r.decision === 'review' ? 'review' : 'declined');
+
+  document.getElementById('riskLevelVal').textContent = r.riskLevel.toUpperCase();
+  document.getElementById('scoreVal').textContent = '0';
+  const circumference = 2*Math.PI*84;
+  const circle = document.getElementById('gaugeCircle');
+  const colorMap = {low:'var(--verified)', medium:'var(--amber)', high:'var(--crimson)', critical:'var(--crimson-glow)'};
+  circle.setAttribute('stroke', colorMap[r.riskLevel] || 'var(--amber)');
+  circle.setAttribute('stroke-dasharray', circumference);
+  circle.setAttribute('stroke-dashoffset', circumference);
+  gsap.to(circle, {attr:{'stroke-dashoffset': circumference*(1 - r.riskScore/100)}, duration:1.4, ease:'power3.out', delay:.2});
+  gsap.to({v:0}, {v:r.riskScore, duration:1.4, ease:'power3.out', delay:.2, onUpdate(){ document.getElementById('scoreVal').textContent = Math.round(this.targets()[0].v); }});
+
+  const idGrid = document.getElementById('identityGrid');
+  idGrid.innerHTML = r.identity.map(f => `<div><div class="f-lbl">${escapeHtml(f.field.toUpperCase())}</div><div class="f-val">${escapeHtml(f.value)}</div></div>`).join('');
+
+  const checksList = document.getElementById('checksList');
+  checksList.innerHTML = r.checks.length ? r.checks.map(c => {
+    const status = String(c.status || 'warning').toLowerCase();
+    const label = c.message || c.check_name || 'Validation check';
+    const style = status === 'passed' ? 'pass' : status === 'warning' ? 'pass' : 'fail';
+    return `<div class="checks-row"><span class="lbl">${escapeHtml(label)}</span><span class="${style}"${status === 'warning' ? ' style="color:var(--amber)"' : ''}>${escapeHtml(status)}</span></div>`;
+  }).join('') : '<p style="color:var(--ink-dim);font-size:13px;">No validation checks were returned.</p>';
+
+  const faceOk = r.face.is_match === true;
+  document.getElementById('faceMatchVal').textContent = r.face.error_message ? 'ERROR' : faceOk ? 'MATCH' : 'NO MATCH';
+  document.getElementById('faceMatchBar').style.width = faceOk ? '100%' : '12%';
+  document.getElementById('faceMatchBar').style.background = faceOk ? 'var(--verified)' : 'var(--crimson)';
+  document.getElementById('livenessRow').textContent = r.face.error_message || `Distance: ${r.face.distance ?? 'N/A'} | Threshold: ${r.face.threshold ?? 'N/A'} | ${r.face.model_name || 'Face model unavailable'}`;
+
+  const suspiciousSignals = r.tampering.signals.filter(signal => signal.is_suspicious);
+  document.getElementById('elaNote').textContent = r.tampering.signals.map(signal => signal.message || signal.signal_name).filter(Boolean).join(' ') || (r.tampering.suspicious ? 'Tampering analysis marked this document as suspicious.' : 'No tampering signals were returned.');
+  document.getElementById('elaScoreVal').textContent = `${r.tampering.score.toFixed(2)} (${Math.round(r.tampering.score * 100)}%)`;
+  document.getElementById('regionsVal').textContent = suspiciousSignals.length;
+  const evidence = r.tampering.signals.map(signal => signal.evidence_image_path).find(Boolean);
+  const evidenceImage = document.getElementById('elaEvidence');
+  if(evidence) { evidenceImage.src = API_BASE + '/' + evidence.replace(/^\/+/, ''); evidenceImage.style.display = 'block'; } else { evidenceImage.removeAttribute('src'); evidenceImage.style.display = 'none'; }
+
+  document.getElementById('riskFactorsList').innerHTML = r.riskFactors.length ? r.riskFactors.map(f => `<li><span class="bullet"></span>${escapeHtml(f.message || f.factor_name || 'Risk factor')}</li>`).join('') : '<li><span class="bullet"></span>No risk factors returned.</li>';
+
+  gsap.fromTo('.report-panel, .report-head', {opacity:0, y:24}, {opacity:1, y:0, duration:.7, stagger:.08, ease:'power3.out'});
+}
+
+/* hook results render into go() */
+const originalGo = go;
+go = function(view){
+  originalGo(view);
+  if(view === 'results') renderResults();
+};
+</script>
+</body>
+</html>

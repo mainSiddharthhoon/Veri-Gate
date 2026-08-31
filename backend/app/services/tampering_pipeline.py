@@ -8,7 +8,6 @@ signals and analysis summaries to Supabase.
 from __future__ import annotations
 
 import logging
-import os
 import time
 from pathlib import Path
 
@@ -20,7 +19,7 @@ from app.services.tampering_core import analyze_document_tampering, TamperingRes
 logger = logging.getLogger(__name__)
 
 # Temporary local storage for evidence images until Supabase Storage is set up
-EVIDENCE_DIR = Path("backend/evidence")
+EVIDENCE_DIR = Path(__file__).resolve().parents[2] / "evidence"
 
 
 def run_tampering_pipeline(
@@ -53,12 +52,12 @@ def run_tampering_pipeline(
     evidence_path = None
     if result.ela_heatmap:
         try:
-            # We are running from the `backend` directory, but creating the 
-            # absolute path defensively. We'll use a relative path just in case.
-            # (Note: In production this would upload to Supabase Storage)
-            os.makedirs("evidence", exist_ok=True)
+            # Store local MVP evidence beside the backend regardless of the
+            # process working directory. In production this is replaced by
+            # Supabase Storage.
+            EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
             filename = f"{session_id}_ela_heatmap.jpg"
-            filepath = Path("evidence") / filename
+            filepath = EVIDENCE_DIR / filename
             filepath.write_bytes(result.ela_heatmap)
             evidence_path = f"evidence/{filename}"
             logger.info("Saved tampering evidence image to %s", evidence_path)

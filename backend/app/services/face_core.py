@@ -15,14 +15,24 @@ logger = logging.getLogger(__name__)
 DETECTOR_BACKEND = "opencv"
 DEFAULT_MODEL = "Facenet512"
 
-def _load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
+def _load_image_from_bytes(image_bytes: bytes, crop_face: bool = False) -> np.ndarray:
     """Load image bytes into an RGB numpy array for DeepFace."""
     image = Image.open(io.BytesIO(image_bytes))
     image = image.convert("RGB")
     # Convert to BGR format for cv2 / deepface
-    return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    img_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    
+    if crop_face:
+        # For the hackathon synthetic passport, use a known photo region.
+        # A more robust system would use a lightweight face detector (like RetinaFace or Haar Cascades)
+        # to find the document photo bounding box dynamically before passing to DeepFace.
+        h, w = img_bgr.shape[:2]
+        if h >= 330 and w >= 240:
+            img_bgr = img_bgr[80:330, 40:240]
+            
+    return img_bgr
 
-def verify_faces(doc_img_bytes: bytes, live_img_bytes: bytes, model_name: str = DEFAULT_MODEL) -> Dict[str, Any]:
+def verify_faces(doc_img_bytes: bytes, live_img_bytes: bytes, model_name: str = DEFAULT_MODEL, crop_document: bool = False) -> Dict[str, Any]:
     """
     Compare document face with live face using DeepFace.
     Returns structured dict ready to match FaceVerificationResponse.
@@ -42,8 +52,8 @@ def verify_faces(doc_img_bytes: bytes, live_img_bytes: bytes, model_name: str = 
     try:
         from deepface import DeepFace
 
-        doc_img = _load_image_from_bytes(doc_img_bytes)
-        live_img = _load_image_from_bytes(live_img_bytes)
+        doc_img = _load_image_from_bytes(doc_img_bytes, crop_face=crop_document)
+        live_img = _load_image_from_bytes(live_img_bytes, crop_face=False)
         
         # enforce_detection=True throws ValueError if it can't find a face
         df_result = DeepFace.verify(

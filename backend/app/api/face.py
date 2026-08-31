@@ -32,7 +32,7 @@ async def verify_face_endpoint(
         raise HTTPException(status_code=400, detail="Both document and live images are required.")
     
     # Run verification (this is synchronous/blocking, so in production we might use a threadpool)
-    result_dict = verify_faces(doc_bytes, live_bytes)
+    result_dict = verify_faces(doc_bytes, live_bytes, crop_document=True)
     
     if session_id:
         result_dict["session_id"] = str(session_id)
