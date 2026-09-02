@@ -713,11 +713,12 @@ function resetSession(){
 /* ---------------- Real screening workflow ---------------- */
 const API_BASE = window.VERIGATE_API_BASE || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : window.location.origin);
 const PIPELINE_STAGES = [
+  {label:'Input Check', sub:'Suitability of document and face'},
   {label:'OCR Extraction', sub:'Reading printed and embedded fields'},
   {label:'MRZ Validation', sub:'Checksum + issuing authority match'},
   {label:'Document Forensics', sub:'Error-level analysis for tampering'},
   {label:'Face Verification', sub:'Liveness + document-to-selfie match'},
-  {label:'Risk Analysis', sub:'Composite scoring across all signals'},
+  {label:'AI Investigation', sub:'Composite reasoning and scoring'},
 ];
 
 function setStage(index, state){
@@ -781,28 +782,32 @@ async function executeScreening(){
   setStage(0, 'running');
   const ocrData = new FormData();
   ocrData.append('file', session.doc);
+  ocrData.append('live_image', session.face);
   ocrData.append('document_type', 'passport');
+  
   const ocr = await requestJson('/api/ocr/extract', {method:'POST', body:ocrData});
   const sessionId = ocr.processing && ocr.processing.session_id;
   if(!sessionId) throw new Error((ocr.processing && ocr.processing.errors || []).join(' ') || 'The server did not create a screening session.');
   session.sessionId = sessionId;
   setStage(0, 'done');
-  // Validation and tampering are completed inside the OCR endpoint.
+  
+  // OCR, Validation, and tampering are completed inside the OCR endpoint.
   setStage(1, 'done');
   setStage(2, 'done');
+  setStage(3, 'done');
 
-  setStage(3, 'running');
+  setStage(4, 'running');
   const faceData = new FormData();
   faceData.append('document_image', session.doc);
   faceData.append('live_image', session.face);
   faceData.append('session_id', sessionId);
   const face = await requestJson('/api/face/verify', {method:'POST', body:faceData});
-  setStage(3, 'done');
+  setStage(4, 'done');
 
-  setStage(4, 'running');
+  setStage(5, 'running');
   const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), {method:'POST'});
   const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId));
-  setStage(4, 'done');
+  setStage(5, 'done');
   session.report = normalizeReport(screening, ocr, face, risk);
   setTimeout(() => go('results'), 200);
 }

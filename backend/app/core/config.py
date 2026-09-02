@@ -28,6 +28,19 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
+    # --- AI Reasoning ---
+    gemini_api_key: str = ""
+    local_ai_api_url: str | None = None
+    local_ai_model: str | None = None
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "openrouter/free"
+    vision_base_url: str | None = None
+    vision_api_key: str | None = None
+    vision_model: str = "qwen2.5-vl-7b-local"
+    vision_timeout_seconds: float = 20.0
+    ai_consistency_runs: int = 1
+
+
     # --- Server ---
     host: str = "0.0.0.0"
     port: int = 8000

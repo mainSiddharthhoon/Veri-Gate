@@ -1,80 +1,104 @@
-import json
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
-from uuid import UUID
+import logging
+from typing import Dict, Any
 
 from supabase import Client
 from app.database.repositories import (
     create_risk_assessment,
     create_risk_factors
 )
+from app.services.ai_reasoning import assess_evidence
 
-@dataclass
-class RiskConfig:
-    # Validation Factors
-    mrz_mismatch_weight: float = 50.0
-    expired_document_weight: float = 40.0
-    reference_mismatch_weight: float = 50.0
-    missing_field_weight: float = 20.0
-    reference_not_found_weight: float = 15.0
-    format_warning_weight: float = 10.0
-    
-    # Tampering Factors
-    tampering_multiplier: float = 60.0
-    
-    # Face Verification Factors
-    face_mismatch_weight: float = 60.0
-    face_error_weight: float = 25.0
-    
-    # Thresholds
-    level_threshold_low: float = 20.0
-    level_threshold_medium: float = 50.0
-    level_threshold_high: float = 79.0
-
-# Default global instance
-CONFIG = RiskConfig()
-
+logger = logging.getLogger(__name__)
 
 def _query_data(response: Any) -> Any:
-    """Return Supabase query data when a query did not yield a response."""
     return getattr(response, "data", None) if response is not None else None
 
-@dataclass
-class RiskFactor:
-    factor_source: str
-    factor_name: str
-    weight: float
-    score_contribution: float
-    severity: str
-    message: str
+def _safe_read(path: str) -> bytes | None:
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Failed to read image at {path}: {e}")
+        return None
 
-    def to_db_dict(self, risk_assessment_id: str) -> dict:
-        return {
-            "risk_assessment_id": risk_assessment_id,
-            "factor_source": self.factor_source,
-            "factor_name": self.factor_name,
-            "weight": float(self.weight),
-            "score_contribution": float(self.score_contribution),
-            "severity": self.severity,
-            "message": self.message,
-        }
+def _calculate_temporal_evidence(doc_data: dict) -> dict:
+    from datetime import datetime
+    today = datetime.now().date()
+    
+    temporal = {
+        "current_date": today.isoformat(),
+        "date_of_birth": doc_data.get("date_of_birth"),
+        "calculated_age": None,
+        "dob_in_future": None,
+        "date_of_issue": doc_data.get("date_of_issue"),
+        "date_of_expiry": doc_data.get("date_of_expiry"),
+        "issue_date_status": "present" if doc_data.get("date_of_issue") else "not_present",
+        "expiry_date_status": "present" if doc_data.get("date_of_expiry") else "not_present",
+        "document_expired": None,
+        "days_until_expiry": None,
+        "issue_before_expiry": None,
+        "issue_in_future": None,
+    }
+    
+    dob_str = temporal["date_of_birth"]
+    if dob_str:
+        try:
+            dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+            temporal["dob_in_future"] = dob > today
+            if not temporal["dob_in_future"]:
+                temporal["calculated_age"] = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        except ValueError:
+            pass
 
-def determine_level_and_decision(total_score: float, config: RiskConfig) -> tuple[str, str]:
-    if total_score <= config.level_threshold_low:
-        return "low", "approve"
-    elif total_score <= config.level_threshold_medium:
-        return "medium", "review"
-    elif total_score <= config.level_threshold_high:
-        return "high", "review"
-    else:
-        return "critical", "reject"
+    exp_str = temporal["date_of_expiry"]
+    exp_date = None
+    if exp_str:
+        try:
+            exp_date = datetime.strptime(exp_str, "%Y-%m-%d").date()
+            temporal["days_until_expiry"] = (exp_date - today).days
+            temporal["document_expired"] = temporal["days_until_expiry"] < 0
+        except ValueError:
+            pass
 
-def assess_session_risk(session_id: str, db: Client, config: RiskConfig = CONFIG) -> dict:
+    iss_str = temporal["date_of_issue"]
+    if iss_str:
+        try:
+            iss_date = datetime.strptime(iss_str, "%Y-%m-%d").date()
+            temporal["issue_in_future"] = iss_date > today
+            if exp_date:
+                temporal["issue_before_expiry"] = iss_date < exp_date
+        except ValueError:
+            pass
+            
+    return temporal
+
+def assess_session_risk(session_id: str, db: Client) -> dict:
     """
-    Calculate the risk score based on Validation, Tampering, and Face Verification results.
+    Main reasoning layer orchestration. 
+    Gathers evidence from Supabase and delegates to AI Reasoning.
     """
     # 1. Fetch data for this session
-    # Validation
+    session_res = db.table("screening_sessions").select("*").eq("id", session_id).maybe_single().execute()
+    session_data = _query_data(session_res)
+    if not session_data:
+        raise ValueError("Session not found")
+        
+    doc_path = session_data.get("document_image_path")
+    face_path = session_data.get("person_image_path")
+    
+    ocr_res = db.table("ocr_results").select("*").eq("session_id", session_id).maybe_single().execute()
+    ocr_data = _query_data(ocr_res) or {}
+    
+    mrz_data = {}
+    if ocr_data and ocr_data.get("mrz_data"):
+        mrz_data = ocr_data["mrz_data"]
+
+    doc_res = db.table("documents").select("*").eq("session_id", session_id).maybe_single().execute()
+    document_data = _query_data(doc_res) or {}
+    temporal_data = _calculate_temporal_evidence(document_data)
+
     val_res = db.table("validation_results").select("id").eq("session_id", session_id).maybe_single().execute()
     validation_checks = []
     validation_data = _query_data(val_res)
@@ -83,151 +107,74 @@ def assess_session_risk(session_id: str, db: Client, config: RiskConfig = CONFIG
         v_checks = db.table("validation_checks").select("*").eq("validation_result_id", v_id).execute()
         validation_checks = _query_data(v_checks) or []
 
-    # Tampering
     tamp_res = db.table("tampering_analyses").select("*").eq("session_id", session_id).maybe_single().execute()
-    tampering_data = _query_data(tamp_res)
+    tampering_data = _query_data(tamp_res) or {}
+    tamp_heatmap = tampering_data.get("heatmap_image_path")
 
-    # Face Verification
     face_res = db.table("face_verifications").select("*").eq("session_id", session_id).maybe_single().execute()
-    face_data = _query_data(face_res)
+    face_data = _query_data(face_res) or {}
 
-    factors: List[RiskFactor] = []
-    total_score = 0.0
-
-    # 2. Analyze Validation Checks
-    for check in validation_checks:
-        status = check["status"]
-        if status == "passed" or status == "skipped":
-            continue
-            
-        # Persisted validation records use ``check_category``; retain the
-        # legacy key as a fallback for older callers and tests.
-        category = check.get("check_category", check.get("category", ""))
-        check_name = check["check_name"]
-        msg = check.get("message", f"Check {check_name} failed.")
-        
-        if check_name == "reference_lookup":
-            weight = config.reference_not_found_weight
-            factors.append(RiskFactor("database_check", check_name, weight, weight, "medium", msg))
-            total_score += weight
-        elif category == "database":
-            weight = config.reference_mismatch_weight
-            factors.append(RiskFactor("database_check", check_name, weight, weight, "critical", msg))
-            total_score += weight
-        elif category == "mrz":
-            weight = config.mrz_mismatch_weight
-            factors.append(RiskFactor("validation", check_name, weight, weight, "critical", msg))
-            total_score += weight
-        elif check_name == "expiry_not_past":
-            weight = config.expired_document_weight
-            factors.append(RiskFactor("validation", check_name, weight, weight, "high", msg))
-            total_score += weight
-        elif check_name.startswith("required_"):
-            weight = config.missing_field_weight
-            factors.append(RiskFactor("validation", check_name, weight, weight, "medium", msg))
-            total_score += weight
-        elif status == "warning":
-            weight = config.format_warning_weight
-            factors.append(RiskFactor("validation", check_name, weight, weight, "low", msg))
-            total_score += weight
-        else:
-            weight = config.missing_field_weight  # Default fallback for failed validation
-            factors.append(RiskFactor("validation", check_name, weight, weight, "medium", msg))
-            total_score += weight
-
-    # 3. Analyze Tampering
-    if tampering_data:
-        tamper_score_raw = tampering_data.get("tamper_score", 0.0)
-        if tamper_score_raw > 0:
-            contribution = tamper_score_raw * config.tampering_multiplier
-            # Determine severity based on contribution
-            sev = "info"
-            if contribution >= 50: sev = "critical"
-            elif contribution >= 30: sev = "high"
-            elif contribution >= 15: sev = "medium"
-            elif contribution > 0: sev = "low"
-            
-            factors.append(RiskFactor(
-                factor_source="tampering",
-                factor_name="image_tampering",
-                weight=config.tampering_multiplier,
-                score_contribution=contribution,
-                severity=sev,
-                message=f"Tampering analysis yielded a score of {tamper_score_raw:.2f}"
-            ))
-            total_score += contribution
-
-    # 4. Analyze Face Verification
-    if face_data:
-        error_msg = face_data.get("error_message")
-        is_match = face_data.get("is_match", False)
-        
-        if error_msg:
-            weight = config.face_error_weight
-            factors.append(RiskFactor(
-                factor_source="face_verification",
-                factor_name="face_detection_error",
-                weight=weight,
-                score_contribution=weight,
-                severity="medium",
-                message=f"Face verification could not complete: {error_msg}"
-            ))
-            total_score += weight
-        elif not is_match:
-            weight = config.face_mismatch_weight
-            factors.append(RiskFactor(
-                factor_source="face_verification",
-                factor_name="face_mismatch",
-                weight=weight,
-                score_contribution=weight,
-                severity="critical",
-                message="The presented face does not match the document photo."
-            ))
-            total_score += weight
-
-    # 5. Compile Result
-    # Capping at 100
-    final_score = min(total_score, 100.0)
-    risk_level, decision = determine_level_and_decision(final_score, config)
+    # 2. Read images
+    doc_bytes = _safe_read(doc_path)
+    face_bytes = _safe_read(face_path)
+    tamp_bytes = _safe_read(tamp_heatmap)
     
-    # Auto-override: If there's any critical factor, force at least 'review' (or 'reject')
-    has_critical = any(f.severity == "critical" for f in factors)
-    if has_critical and decision == "approve":
-        decision = "review"
-        if risk_level == "low":
-            risk_level = "medium"
-            
-    # Auto-override 2: Face mismatch is an absolute Reject in this simplified system
-    if any(f.factor_name == "face_mismatch" for f in factors):
-        decision = "reject"
-        risk_level = "critical"
+    if not doc_bytes:
+        raise ValueError("Document image is required for assessment.")
 
-    summary_parts = []
-    if final_score == 0:
-        summary_parts.append("Clean document. All checks passed.")
-    else:
-        summary_parts.append(f"Identified {len(factors)} risk factor(s).")
-        
-    summary = " ".join(summary_parts)
+    # 3. Call AI Reasoning
+    ai_assessment, run1, run2, provider = assess_evidence(
+        document_image=doc_bytes,
+        face_image=face_bytes,
+        tampering_image=tamp_bytes,
+        ocr_data=ocr_data,
+        mrz_data=mrz_data,
+        validation_data=validation_checks,
+        tampering_data=tampering_data,
+        face_data=face_data,
+        temporal_data=temporal_data
+    )
 
+    # 4. Format for Database
     assessment_record = {
         "session_id": session_id,
-        "risk_score": float(final_score),
-        "risk_level": risk_level,
-        "decision": decision,
-        "summary": summary,
-        "scoring_config": asdict(config)
+        "risk_score": ai_assessment.risk_score,
+        "risk_level": ai_assessment.risk_level,
+        "decision": ai_assessment.decision,
+        "summary": ai_assessment.report,
+        "scoring_config": {"ai_provider": provider, "reason": ai_assessment.reason}
     }
 
     # Persist to Supabase
     db_assessment = create_risk_assessment(db, assessment_record)
     
+    # Translate boolean flags into UI risk factors
+    factors = []
+    if not ai_assessment.document_valid:
+        factors.append({"factor_source": "validation", "factor_name": "document_invalid", "weight": 50, "score_contribution": 50, "severity": "critical", "message": "Document is not visually plausible."})
+    if not ai_assessment.identity_consistent:
+        factors.append({"factor_source": "validation", "factor_name": "identity_inconsistent", "weight": 50, "score_contribution": 50, "severity": "high", "message": "Fields are internally inconsistent."})
+    if ai_assessment.tampering_concern:
+        factors.append({"factor_source": "tampering", "factor_name": "tampering_concern", "weight": 50, "score_contribution": 50, "severity": "high", "message": "Forensic evidence supports suspicion of tampering."})
+    if ai_assessment.identity_match_status == "mismatch":
+        factors.append({"factor_source": "face_verification", "factor_name": "face_mismatch", "weight": 50, "score_contribution": 50, "severity": "critical", "message": "Document face does not match presented person."})
+    if ai_assessment.inconclusive:
+        factors.append({"factor_source": "validation", "factor_name": "inconclusive", "weight": 50, "score_contribution": 50, "severity": "medium", "message": "AI deemed evidence inconclusive or contradictory."})
+        
+    for rf in ai_assessment.risk_factors:
+        factors.append({"factor_source": "validation", "factor_name": "ai_risk_factor", "weight": 20, "score_contribution": 20, "severity": "medium", "message": rf})
+
     db_factors = []
     if factors:
-        factor_records = [f.to_db_dict(db_assessment["id"]) for f in factors]
+        factor_records = [{**f, "risk_assessment_id": db_assessment["id"]} for f in factors]
         db_factors = create_risk_factors(db, factor_records)
+
+    # Attach the provider back out to the top-level response so the router can return it
+    db_assessment["ai_provider"] = provider
 
     return {
         "assessment": db_assessment,
-        "factors": db_factors
+        "factors": db_factors,
+        "debug_run1": run1.model_dump() if run1 else None,
+        "debug_run2": run2.model_dump() if run2 else None
     }

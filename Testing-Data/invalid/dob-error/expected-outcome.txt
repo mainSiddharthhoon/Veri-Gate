@@ -1,0 +1,1 @@
+In the given image the person's birthday is in future , that must be denied , expected outcome : birth in future .

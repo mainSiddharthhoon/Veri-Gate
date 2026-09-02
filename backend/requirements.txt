@@ -6,6 +6,7 @@ supabase==2.*
 python-dotenv==1.*
 python-multipart==0.0.*
 httpx==0.28.*
+google-genai>=1.0.0
 
 # OCR / Computer Vision
 paddleocr>=3.0

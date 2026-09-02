@@ -18,6 +18,7 @@ from app.schemas.ocr import (
     ProcessingInfoResponse,
 )
 from app.services.ocr_pipeline import run_ocr_pipeline
+from app.services.ai_reasoning import qualify_inputs
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 @router.post("/extract", response_model=OcrExtractResponse)
 async def extract_document(
     file: UploadFile = File(..., description="Document image (JPEG, PNG)"),
+    live_image: UploadFile = File(..., description="Presented person face image"),
     document_type: str = Form("passport", description="Document type"),
     db: Client = Depends(get_db),
 ) -> OcrExtractResponse:
@@ -43,13 +45,20 @@ async def extract_document(
     ):
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type: {file.content_type}. Use JPEG, PNG, WebP, or TIFF.",
+            detail=f"Unsupported document file type: {file.content_type}.",
         )
 
-    # Read uploaded file
+    # Read uploaded files
     image_bytes = await file.read()
-    if len(image_bytes) == 0:
+    live_bytes = await live_image.read()
+    
+    if len(image_bytes) == 0 or len(live_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty file uploaded.")
+
+    # AI Input Qualification (Combined)
+    qualification = qualify_inputs(image_bytes, live_bytes)
+    if not qualification.input_valid:
+        raise HTTPException(status_code=400, detail="Please provide a valid identity document and a clear photo of the person.")
 
     # Run the OCR pipeline
     pipeline_result = run_ocr_pipeline(
@@ -57,6 +66,18 @@ async def extract_document(
         db=db,
         document_type=document_type,
     )
+
+    if pipeline_result.session_id:
+        import os
+        from app.database.repositories import update_screening_session
+        os.makedirs("uploads", exist_ok=True)
+        doc_path = f"uploads/{pipeline_result.session_id}_doc.jpg"
+        with open(doc_path, "wb") as f:
+            f.write(image_bytes)
+        try:
+            update_screening_session(db, pipeline_result.session_id, {"document_image_path": doc_path})
+        except Exception as e:
+            pass
 
     # Build response
     ocr_blocks = [

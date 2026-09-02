@@ -41,27 +41,28 @@ class OcrRawResult:
 # OCR Engine — lazy singleton
 # ---------------------------------------------------------------------------
 
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    PaddleOCR = None
+
 _ocr_engine = None
 
-
 def _get_ocr_engine():
-    """Get or create the PaddleOCR engine (singleton).
-
-    Lazy-loads on first use to avoid startup delay and large memory
-    allocation when OCR isn't needed.
-    """
+    """Get or create the PaddleOCR engine (singleton)."""
     global _ocr_engine
     if _ocr_engine is None:
+        if PaddleOCR is None:
+            raise ImportError("paddleocr is not installed.")
         logger.info("Initializing PaddleOCR engine (first use)...")
-        from paddleocr import PaddleOCR
-
         _ocr_engine = PaddleOCR(
+            use_angle_cls=False,
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
-            use_textline_orientation=False,
             enable_mkldnn=False,
             lang="en",           # English for passport documents
         )
+        logger.info("PaddleOCR engine initialized.")
         logger.info("PaddleOCR engine initialized.")
     return _ocr_engine
 
@@ -80,6 +81,15 @@ def run_ocr(image: np.ndarray) -> OcrRawResult:
         OcrRawResult containing all detected text blocks with
         bounding boxes, confidence scores, and aggregated text.
     """
+    import cv2
+    
+    # Downscale image to prevent OpenCV OutOfMemoryError on constrained systems
+    h, w = image.shape[:2]
+    max_dim = 1024
+    if max(h, w) > max_dim:
+        scale = max_dim / max(h, w)
+        image = cv2.resize(image, (int(w * scale), int(h * scale)))
+
     engine = _get_ocr_engine()
 
     start = time.time()

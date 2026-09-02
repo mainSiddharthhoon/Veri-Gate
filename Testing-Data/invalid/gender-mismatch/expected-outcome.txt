@@ -1,0 +1,1 @@
+In the given image just there is small mistake in the person's gender on document , it maybe reviwied or denied, expected outcome , he is a male but on document it's a female.

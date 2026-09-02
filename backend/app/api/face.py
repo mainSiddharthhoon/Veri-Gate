@@ -36,6 +36,18 @@ async def verify_face_endpoint(
     
     if session_id:
         result_dict["session_id"] = str(session_id)
+        
+        import os
+        from app.database.repositories import update_screening_session
+        os.makedirs("uploads", exist_ok=True)
+        face_path = f"uploads/{session_id}_face.jpg"
+        with open(face_path, "wb") as f:
+            f.write(live_bytes)
+        try:
+            update_screening_session(db, str(session_id), {"person_image_path": face_path})
+        except Exception as e:
+            pass
+
         try:
             # Store the result in the database
             create_face_verification(db, result_dict)

@@ -12,17 +12,23 @@ client = TestClient(app)
 
 def verify():
     print("Loading test image...")
-    image_path = Path("tests/test_data/synthetic_passport.jpg")
-    if not image_path.exists():
-        print(f"Error: image not found at {image_path}")
+    image_path = Path(r"D:\new-download\VGX-260902-11-document.png")
+    live_path = Path(r"D:\new-download\VGX-260902-14-portrait.png")
+    
+    if not image_path.exists() or not live_path.exists():
+        print(f"Error: images not found")
         return
         
     image_bytes = image_path.read_bytes()
+    live_bytes = live_path.read_bytes()
     
     print("Calling OCR extract endpoint...")
     response = client.post(
         "/api/ocr/extract",
-        files={"file": ("synthetic_passport.jpg", image_bytes, "image/jpeg")},
+        files={
+            "file": ("document.jpg", image_bytes, "image/jpeg"),
+            "live_image": ("matching_face.jpg", live_bytes, "image/jpeg")
+        },
         data={"document_type": "passport"}
     )
     
@@ -131,7 +137,7 @@ def verify():
         
         # Now the backend handles cropping server-side
         doc_face_bytes = image_bytes
-        live_face_bytes = image_bytes
+        live_face_bytes = live_bytes
 
         face_response = client.post(
             "/api/face/verify",

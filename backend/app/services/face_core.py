@@ -23,12 +23,10 @@ def _load_image_from_bytes(image_bytes: bytes, crop_face: bool = False) -> np.nd
     img_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     
     if crop_face:
-        # For the hackathon synthetic passport, use a known photo region.
-        # A more robust system would use a lightweight face detector (like RetinaFace or Haar Cascades)
-        # to find the document photo bounding box dynamically before passing to DeepFace.
-        h, w = img_bgr.shape[:2]
-        if h >= 330 and w >= 240:
-            img_bgr = img_bgr[80:330, 40:240]
+        # We previously hardcoded passport coordinates here.
+        # Now we rely on DeepFace's detector to natively find the face in the whole document.
+        # (Alternatively, we could use RetinaFace here for bounding boxes before feeding to FaceNet).
+        pass
             
     return img_bgr
 
@@ -55,7 +53,6 @@ def verify_faces(doc_img_bytes: bytes, live_img_bytes: bytes, model_name: str = 
         doc_img = _load_image_from_bytes(doc_img_bytes, crop_face=crop_document)
         live_img = _load_image_from_bytes(live_img_bytes, crop_face=False)
         
-        # enforce_detection=True throws ValueError if it can't find a face
         df_result = DeepFace.verify(
             img1_path=doc_img,
             img2_path=live_img,

@@ -1,0 +1,1 @@
+In the given document the issued date is today 02/09/2026 , but in the expired date it's expired before issued , that's invalid, it must be denied or reviwed , expected outcome should be issue-expire date misconfiguration.
