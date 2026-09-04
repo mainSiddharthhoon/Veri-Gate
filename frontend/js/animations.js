@@ -13,20 +13,34 @@ if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
 function initParticles() {
   const canvas = document.getElementById('particleCanvas');
   if (!canvas) return;
+
+  // Respect reduced-motion preferences
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    canvas.style.display = 'none';
+    return;
+  }
+
   const ctx = canvas.getContext('2d');
   let w, h, particles = [], mouse = { x: -1000, y: -1000 };
+  let isParticleLoopActive = true;
+  let animFrameId = null;
 
   function resize() {
     w = canvas.width = window.innerWidth;
     h = canvas.height = window.innerHeight;
   }
   resize();
-  window.addEventListener('resize', resize);
+
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resize, 150);
+  }, { passive: true });
 
   document.addEventListener('mousemove', e => {
     mouse.x = e.clientX;
     mouse.y = e.clientY;
-  });
+  }, { passive: true });
 
   class Particle {
     constructor() { this.reset(); }
@@ -66,10 +80,12 @@ function initParticles() {
     }
   }
 
-  const count = Math.min(80, Math.floor(w * h / 15000));
+  const count = Math.min(60, Math.floor((w * h) / 18000));
   for (let i = 0; i < count; i++) particles.push(new Particle());
 
   function animate() {
+    if (!isParticleLoopActive) return;
+
     ctx.clearRect(0, 0, w, h);
     particles.forEach(p => { p.update(); p.draw(); });
 
@@ -79,18 +95,49 @@ function initParticles() {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
+        if (dist < 110) {
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(248, 81, 73, ${0.04 * (1 - dist / 120)})`;
+          ctx.strokeStyle = `rgba(248, 81, 73, ${0.04 * (1 - dist / 110)})`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
     }
-    requestAnimationFrame(animate);
+    animFrameId = requestAnimationFrame(animate);
   }
+
+  function startLoop() {
+    if (!isParticleLoopActive) {
+      isParticleLoopActive = true;
+      animFrameId = requestAnimationFrame(animate);
+    }
+  }
+
+  function stopLoop() {
+    isParticleLoopActive = false;
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+  }
+
+  // Pause when tab is inactive
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopLoop();
+    else if (window.scrollY < window.innerHeight * 1.5) startLoop();
+  });
+
+  // Pause when user scrolled past hero section
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > window.innerHeight * 1.8) {
+      if (isParticleLoopActive) stopLoop();
+    } else {
+      if (!isParticleLoopActive && !document.hidden) startLoop();
+    }
+  }, { passive: true });
+
   animate();
 }
 
@@ -101,18 +148,26 @@ function initNavbarScroll() {
   const links = navbar.querySelectorAll('.nav-links a[data-section]');
   const sections = document.querySelectorAll('section[id]');
 
+  let isScrollTicking = false;
   window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 60);
+    if (!isScrollTicking) {
+      requestAnimationFrame(() => {
+        navbar.classList.toggle('scrolled', window.scrollY > 60);
 
-    // Active section highlighting
-    let current = '';
-    sections.forEach(sec => {
-      const top = sec.offsetTop - 200;
-      if (window.scrollY >= top) current = sec.id;
-    });
-    links.forEach(a => {
-      a.classList.toggle('active-link', a.dataset.section === current);
-    });
+        // Active section highlighting
+        let current = '';
+        const scrollPos = window.scrollY + 220;
+        for (let i = 0; i < sections.length; i++) {
+          const sec = sections[i];
+          if (sec.offsetTop <= scrollPos) current = sec.id;
+        }
+        links.forEach(a => {
+          a.classList.toggle('active-link', a.dataset.section === current);
+        });
+        isScrollTicking = false;
+      });
+      isScrollTicking = true;
+    }
   }, { passive: true });
 }
 
@@ -1179,7 +1234,12 @@ function initSectionReveals() {
 }
 
 /* ── Master Init ── */
+let isAnimationsInitialized = false;
+
 function initAllAnimations() {
+  if (isAnimationsInitialized) return;
+  isAnimationsInitialized = true;
+
   initParticles();
   initNavbarScroll();
   initWaterButtons();

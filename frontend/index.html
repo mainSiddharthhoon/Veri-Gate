@@ -11,11 +11,11 @@
   <meta http-equiv="Expires" content="0" />
 
   <!-- Stylesheets (cache-busted for immediate mobile sync) -->
-  <link rel="stylesheet" href="css/variables.css?v=20260905_0110" />
-  <link rel="stylesheet" href="css/layout.css?v=20260905_0110" />
-  <link rel="stylesheet" href="css/landing.css?v=20260905_0110" />
-  <link rel="stylesheet" href="css/screening.css?v=20260905_0110" />
-  <link rel="stylesheet" href="css/mobile.css?v=20260905_0110" />
+  <link rel="stylesheet" href="css/variables.css?v=20260905_0140" />
+  <link rel="stylesheet" href="css/layout.css?v=20260905_0140" />
+  <link rel="stylesheet" href="css/landing.css?v=20260905_0140" />
+  <link rel="stylesheet" href="css/screening.css?v=20260905_0140" />
+  <link rel="stylesheet" href="css/mobile.css?v=20260905_0140" />
 
   <!-- GSAP & jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -23,12 +23,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/dev-guard.js?v=20260905_0110"></script>
-  <script src="js/config.js?v=20260905_0110" defer></script>
-  <script src="js/api.js?v=20260905_0110" defer></script>
-  <script src="js/animations.js?v=20260905_0110" defer></script>
-  <script src="js/screening.js?v=20260905_0110" defer></script>
-  <script src="js/app.js?v=20260905_0110" defer></script>
+  <script src="js/dev-guard.js?v=20260905_0140"></script>
+  <script src="js/config.js?v=20260905_0140" defer></script>
+  <script src="js/api.js?v=20260905_0140" defer></script>
+  <script src="js/animations.js?v=20260905_0140" defer></script>
+  <script src="js/screening.js?v=20260905_0140" defer></script>
+  <script src="js/app.js?v=20260905_0140" defer></script>
 </head>
 <body>
 
@@ -42,7 +42,7 @@
 <!-- ═══════════════════════════════════════════
      FLOATING LIQUID GLASS NAVBAR
      ═══════════════════════════════════════════ -->
-<div class="navbar-wrap">
+<header class="navbar-wrap">
   <nav class="navbar" id="navbar">
     <a href="#" class="brand" onclick="go('landing');return false;">
       <div class="brand-icon">
@@ -64,14 +64,16 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17 17 7M7 7h10v10"/></svg>
     </button>
   </nav>
-</div>
+</header>
+
+<main id="main-content">
 
 <!-- ═══════════════════════════════════════════
      HERO — Full-Bleed Video & Left-Aligned Intelligence
      ═══════════════════════════════════════════ -->
 <section class="hero" id="hero">
   <div class="hero-video-wrap">
-    <video id="heroVideo" autoplay muted loop playsinline src="assets/videos/hero-character.mp4"></video>
+    <video id="heroVideo" autoplay muted loop playsinline preload="metadata" src="assets/videos/hero-character.mp4"></video>
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-vignette"></div>
@@ -127,7 +129,7 @@
         <!-- Dynamic Card Body (Flipped on 3D rotation) -->
         <div class="card-body" id="cardBody">
           <div class="card-metric-value mono" id="cardValue">Rules + AI</div>
-          <h3 class="card-metric-title" id="cardTitle">Deterministic &amp; Generative Defense</h3>
+          <h2 class="card-metric-title" id="cardTitle">Deterministic &amp; Generative Defense</h2>
           <p class="card-metric-desc" id="cardDesc">
             Combines deterministic validation rules with vision-language models to verify documents and facial identity.
           </p>
@@ -938,6 +940,7 @@
     </div>
   </div>
 </section>
+</main>
 
 <!-- ═══════════════════════════════════════════
      COMPREHENSIVE FORENSIC FOOTER & LICENSING
@@ -969,7 +972,7 @@
 
         <!-- Quick Navigation -->
         <div class="footer-nav-col">
-          <h4 class="footer-col-title">Navigation</h4>
+          <h3 class="footer-col-title">Navigation</h3>
           <ul class="footer-links-list">
             <li><a href="#hero">Overview</a></li>
             <li><a href="#problem">Threat Landscape</a></li>
@@ -981,7 +984,7 @@
 
         <!-- Trust & Security -->
         <div class="footer-nav-col">
-          <h4 class="footer-col-title">Trust &amp; Privacy</h4>
+          <h3 class="footer-col-title">Trust &amp; Privacy</h3>
           <ul class="footer-links-list">
             <li><a href="#screening">Zero Data Retention</a></li>
             <li><a href="#sense">Biometric Protection</a></li>
@@ -1008,98 +1011,6 @@
   </div>
 </footer>
 
-<!-- ═══════════════════════════════════════════
-     PROCESSING OVERLAY
-     ═══════════════════════════════════════════ -->
-<div class="view-overlay" id="view-processing">
-  <div class="processing-view">
-    <div class="proc-ring-wrap">
-      <div class="proc-ring-pulse"></div>
-      <div class="proc-ring-outer"></div>
-      <div class="proc-ring-center">
-        <span class="proc-pct" id="procPct">0%</span>
-      </div>
-    </div>
-    <p class="proc-title">RUNNING VERIFICATION PIPELINE</p>
-    <div class="stage-list" id="stageList"></div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     RESULTS OVERLAY — Intelligence Report
-     ═══════════════════════════════════════════ -->
-<div class="view-overlay" id="view-results">
-  <div class="results-page">
-
-    <!-- Report Header -->
-    <div class="report-header">
-      <span class="section-tag">SECURITY INTELLIGENCE REPORT</span>
-      <span class="decision-badge" id="decisionBadge"></span>
-    </div>
-
-    <!-- Score Hero -->
-    <div class="score-hero">
-      <div class="gauge-wrap">
-        <svg viewBox="0 0 200 200" width="200" height="200">
-          <circle class="gauge-bg" cx="100" cy="100" r="84" />
-          <circle class="gauge-fill" id="gaugeCircle" cx="100" cy="100" r="84" stroke="var(--crimson)" stroke-dasharray="527.8" stroke-dashoffset="527.8" />
-        </svg>
-        <div class="gauge-center">
-          <span class="score-value" id="scoreVal">0</span>
-          <span class="score-label">RISK / 100</span>
-        </div>
-      </div>
-      <div class="risk-info">
-        <div class="risk-level-label">RISK LEVEL</div>
-        <div class="risk-level-value" id="riskLevelVal"></div>
-        <div class="identity-grid" id="identityGrid"></div>
-      </div>
-    </div>
-
-    <!-- Evidence Panels -->
-    <div class="report-grid two-col">
-      <div class="report-panel">
-        <div class="panel-title"><span class="title-dot" style="background:var(--verified);"></span>Validation Checks</div>
-        <div id="checksList"></div>
-      </div>
-      <div class="report-panel">
-        <div class="panel-title"><span class="title-dot" style="background:var(--crimson);"></span>Face Verification</div>
-        <div class="face-match-display">
-          <span class="match-value" id="faceMatchVal">—</span>
-          <span class="match-label">document-to-selfie</span>
-        </div>
-        <div class="face-bar"><div class="face-bar-fill" id="faceMatchBar"></div></div>
-        <div class="face-detail" id="livenessRow"></div>
-      </div>
-    </div>
-
-    <div class="report-grid">
-      <div class="report-panel">
-        <div class="panel-title"><span class="title-dot" style="background:var(--amber);"></span>Tampering Forensics</div>
-        <p class="ela-note" id="elaNote"></p>
-        <div class="ela-stats">
-          <div class="ela-stat"><div class="ela-label">ELA SCORE</div><div class="ela-value" id="elaScoreVal">—</div></div>
-          <div class="ela-stat"><div class="ela-label">REGIONS FLAGGED</div><div class="ela-value" id="regionsVal">—</div></div>
-        </div>
-        <img class="evidence-image" id="elaEvidence" alt="Error-level analysis evidence" />
-      </div>
-    </div>
-
-    <div class="report-grid">
-      <div class="report-panel">
-        <div class="panel-title"><span class="title-dot" style="background:var(--crimson-glow);"></span>Risk Factors</div>
-        <div class="risk-factors-list" id="riskFactorsList"></div>
-      </div>
-    </div>
-
-    <!-- Rerun -->
-    <button type="button" class="rerun-link" onclick="resetSession(); closeOverlays(); document.body.style.overflow=''; setTimeout(()=>go('screen'),100);">
-      <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
-      Run another screening
-    </button>
-  </div>
-</div>
-
 <!-- Live Camera Capture Modal -->
 <div class="camera-modal-backdrop" id="cameraModal" style="display:none;" onclick="if(event.target===this) closeCameraModal()">
   <div class="camera-modal-dialog">
@@ -1124,16 +1035,6 @@
     </div>
   </div>
 </div>
-
-<!-- Water / Liquid Physics SVG Filter -->
-<svg style="position:absolute;width:0;height:0;pointer-events:none;" aria-hidden="true">
-  <defs>
-    <filter id="liquid-filter">
-      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.02" numOctaves="3" result="noise" />
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-  </defs>
-</svg>
 
 </body>
 </html>

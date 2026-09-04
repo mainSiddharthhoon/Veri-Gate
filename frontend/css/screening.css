@@ -1657,19 +1657,4 @@
   }
 }
 
-/* ══════════════════════════════════════
-   OVERLAY STYLES PRESERVED AS FALLBACK
-   ══════════════════════════════════════ */
-.view-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: rgba(3, 4, 8, 0.96);
-  overflow-y: auto;
-}
-
-.view-overlay.active {
-  display: block;
-}
 

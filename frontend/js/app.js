@@ -56,7 +56,6 @@ function go(view) {
 }
 
 function closeOverlays() {
-  document.querySelectorAll('.view-overlay').forEach(el => el.classList.remove('active'));
   document.body.style.overflow = '';
 }
 
@@ -76,35 +75,11 @@ function setupHeroVideo() {
 }
 
 /**
- * Build the pipeline stage cards dynamically.
- */
-function buildPipelineStages() {
-  const container = document.getElementById('pipelineStages');
-  if (!container) return;
-  container.innerHTML = '';
-
-  STAGES.forEach((s, i) => {
-    const card = document.createElement('div');
-    card.className = 'pipeline-stage' + (i === 0 ? ' active' : '');
-    card.innerHTML = `
-      <div class="stage-header">
-        <div class="stage-number">${s.num}</div>
-        <span class="stage-label">${s.tag}</span>
-      </div>
-      <h3>${s.title}</h3>
-      <p>${s.body}</p>
-    `;
-    container.appendChild(card);
-  });
-}
-
-/**
  * Bootstrap on DOMContentLoaded.
  */
 document.addEventListener('DOMContentLoaded', () => {
   setupHeroVideo();
   setupUploadPanels();
-  buildPipelineStages();
 
   if (typeof initAllAnimations === 'function') {
     initAllAnimations();

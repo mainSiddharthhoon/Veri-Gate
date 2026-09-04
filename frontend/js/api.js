@@ -13,15 +13,22 @@
  * @returns {Promise<any>}
  */
 async function requestJson(path, options) {
-  const response = await fetch(API_BASE + path, options);
-  if (response.ok) return response.json();
-
-  let detail = 'Request failed (' + response.status + ')';
   try {
-    const body = await response.json();
-    detail = typeof body.detail === 'string' ? body.detail : body.detail?.message || detail;
-  } catch (_) {}
-  throw new Error(detail);
+    const response = await fetch(API_BASE + path, options);
+    if (response.ok) return response.json();
+
+    let detail = 'Request failed (' + response.status + ')';
+    try {
+      const body = await response.json();
+      detail = typeof body.detail === 'string' ? body.detail : body.detail?.message || detail;
+    } catch (_) {}
+    throw new Error(detail);
+  } catch (err) {
+    if (err.name === 'TypeError' && /failed to fetch|networkerror/i.test(err.message)) {
+      throw new Error('Backend server is offline or unreachable at ' + API_BASE + '. Please ensure the VeriGate service is running.');
+    }
+    throw err;
+  }
 }
 
 /**
@@ -89,57 +96,62 @@ function calculateExpiryStatus(expiryStr) {
  * 3. Risk Assessment (generates composite score and decision)
  * 4. Normalized report aggregation
  */
+let isScreeningInFlight = false;
+
 async function executeScreening() {
+  if (isScreeningInFlight) return;
+  isScreeningInFlight = true;
   session.startTime = Date.now();
 
-  // Helper to notify both overlay and inline telemetry
-  const updateStageProgress = (index, state, logMsg) => {
-    if (typeof setStage === 'function') setStage(index, state);
-    if (typeof setInlineStage === 'function') setInlineStage(index, state, logMsg);
-  };
+  try {
+    // Helper to notify inline telemetry
+    const updateStageProgress = (index, state, logMsg) => {
+      if (typeof setInlineStage === 'function') setInlineStage(index, state, logMsg);
+    };
 
-  // Stage 0: Input Check & OCR Extraction
-  updateStageProgress(0, 'running', 'Mounting evidence files to secure pipeline scratchpad...');
-  const ocrData = new FormData();
-  ocrData.append('file', session.doc);
-  ocrData.append('live_image', session.face);
-  ocrData.append('document_type', 'passport');
+    // Stage 0: Input Check & OCR Extraction
+    updateStageProgress(0, 'running', 'Mounting evidence files to secure pipeline scratchpad...');
+    const ocrData = new FormData();
+    ocrData.append('file', session.doc);
+    ocrData.append('live_image', session.face);
+    ocrData.append('document_type', 'passport');
 
-  const ocr = await requestJson('/api/ocr/extract', { method: 'POST', body: ocrData });
-  const sessionId = ocr.processing && ocr.processing.session_id;
-  if (!sessionId) {
-    throw new Error((ocr.processing && ocr.processing.errors || []).join(' ') || 'The server did not create a screening session.');
-  }
-  session.sessionId = sessionId;
-  updateStageProgress(0, 'done', 'Input qualified: Document and portrait accepted.');
+    const ocr = await requestJson('/api/ocr/extract', { method: 'POST', body: ocrData });
+    const sessionId = ocr.processing && ocr.processing.session_id;
+    if (!sessionId) {
+      throw new Error((ocr.processing && ocr.processing.errors || []).join(' ') || 'The server did not create a screening session.');
+    }
+    session.sessionId = sessionId;
+    updateStageProgress(0, 'done', 'Input qualified: Document and portrait accepted.');
 
-  // OCR, Validation, and Tampering complete together within the primary extraction pipeline
-  updateStageProgress(1, 'done', 'OCR text extraction & glyph segmentation complete.');
-  updateStageProgress(2, 'done', 'MRZ checksum validation verified.');
-  updateStageProgress(3, 'done', 'Error-level analysis (ELA) forensic scan complete.');
+    // OCR, Validation, and Tampering complete together within the primary extraction pipeline
+    updateStageProgress(1, 'done', 'OCR text extraction & glyph segmentation complete.');
+    updateStageProgress(2, 'done', 'MRZ checksum validation verified.');
+    updateStageProgress(3, 'done', 'Error-level analysis (ELA) forensic scan complete.');
 
-  // Stage 4: Face Verification
-  updateStageProgress(4, 'running', 'Extracting 512-dim face embeddings and matching vectors...');
-  const faceData = new FormData();
-  faceData.append('document_image', session.doc);
-  faceData.append('live_image', session.face);
-  faceData.append('session_id', sessionId);
-  const face = await requestJson('/api/face/verify', { method: 'POST', body: faceData });
-  updateStageProgress(4, 'done', 'Biometric comparison resolved.');
+    // Stage 4: Face Verification
+    updateStageProgress(4, 'running', 'Extracting 512-dim face embeddings and matching vectors...');
+    const faceData = new FormData();
+    faceData.append('document_image', session.doc);
+    faceData.append('live_image', session.face);
+    faceData.append('session_id', sessionId);
+    const face = await requestJson('/api/face/verify', { method: 'POST', body: faceData });
+    updateStageProgress(4, 'done', 'Biometric comparison resolved.');
 
-  // Stage 5: AI Risk Assessment & Screening Record Retrieval
-  updateStageProgress(5, 'running', 'Synthesizing evidence through Gemma AI forensic arbiter...');
-  const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), { method: 'POST' });
-  const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId));
-  updateStageProgress(5, 'done', 'Autonomous verification consensus finalized.');
+    // Stage 5: AI Risk Assessment & Screening Record Retrieval
+    updateStageProgress(5, 'running', 'Synthesizing evidence through Gemma AI forensic arbiter...');
+    const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), { method: 'POST' });
+    const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId));
+    updateStageProgress(5, 'done', 'Autonomous verification consensus finalized.');
 
-  // Normalization and Results rendering
-  session.report = normalizeReport(screening, ocr, face, risk);
+    // Normalization and Results rendering
+    session.report = normalizeReport(screening, ocr, face, risk);
 
-  if (typeof renderDynamicResults === 'function') {
-    renderDynamicResults(session.report);
-  } else {
-    setTimeout(() => go('results'), 200);
+    if (typeof renderDynamicResults === 'function') {
+      renderDynamicResults(session.report);
+    }
+  } finally {
+    isScreeningInFlight = false;
   }
 }
 

@@ -134,10 +134,14 @@ function updateIntakeStatus() {
   }
 }
 
+let isLoadingSample = false;
+
 /**
  * Fast Demo Samples Loader
  */
 async function loadSampleCase(type) {
+  if (isLoadingSample) return;
+  isLoadingSample = true;
   try {
     const isDocValid = type === 'valid';
     const basePath = isDocValid ? 'assets/samples/valid/' : 'assets/samples/invalid/';
@@ -170,6 +174,8 @@ async function loadSampleCase(type) {
     }
   } catch (err) {
     console.error('Error loading sample case:', err);
+  } finally {
+    isLoadingSample = false;
   }
 }
 
@@ -216,13 +222,21 @@ function setRunButtonState(state) {
   }
 }
 
+let isCheckingConnection = false;
+
 async function checkServerConnection() {
+  if (isCheckingConnection) return;
+  isCheckingConnection = true;
+
   const statusEl = document.getElementById('serverConnectionStatus');
   const dotEl = document.getElementById('serverConnectionDot');
   const textEl = document.getElementById('serverConnectionText');
 
   try {
-    const res = await fetch('/api/health', { method: 'GET', signal: AbortSignal.timeout(3000) });
+    const res = await fetch('/api/health', {
+      method: 'GET',
+      signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
+    });
     if (res.ok) {
       if (statusEl) {
         statusEl.classList.remove('disconnected');
@@ -247,9 +261,11 @@ async function checkServerConnection() {
       dotEl.className = 'pulse-dot-red';
     }
     if (textEl) {
-      textEl.textContent = 'CONNECTION FAILED • SERVER OFFLINE';
+      textEl.textContent = 'SERVER OFFLINE • VERIGATE STANDBY';
     }
     return false;
+  } finally {
+    isCheckingConnection = false;
   }
 }
 
@@ -1353,35 +1369,3 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 }
 
-/* ═══════════════════════════════════
-   LEGACY OVERLAY RENDERING FALLBACK
-   ═══════════════════════════════════ */
-
-function setStage(index, state) {
-  const check = document.getElementById('check-' + index);
-  const name = document.getElementById('name-' + index);
-  const fill = document.getElementById('fill-' + index);
-  if (!check || !name || !fill) return;
-
-  check.className = 'stage-check ' + state;
-  name.classList.toggle('active', state === 'running');
-  if (state === 'running') fill.style.width = '45%';
-  if (state === 'done') fill.style.width = '100%';
-}
-
-function stageError(message) {
-  screeningError(message);
-}
-
-function runProcessing() {
-  startScreeningProcess();
-}
-
-function renderResults() {
-  if (session.report) renderDynamicResults(session.report);
-}
-
-// Automatically check server connection upon load
-if (typeof window !== 'undefined') {
-  setTimeout(checkServerConnection, 300);
-}
