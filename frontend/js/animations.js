@@ -465,17 +465,17 @@ function initProblemAnimations() {
   // Animate problem header elements with cinematic blur dissipation
   gsap.fromTo('.problem-eyebrow', 
     { opacity: 0, y: 20 }, 
-    { opacity: 1, y: 0, duration: 0.75, scrollTrigger: { trigger: '.problem', start: 'top 85%' } }
+    { opacity: 1, y: 0, duration: 0.75, scrollTrigger: { trigger: '#problem', start: 'top 85%' } }
   );
 
   gsap.fromTo('.problem-title', 
     { opacity: 0, y: 35, filter: 'blur(10px)' }, 
-    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.problem', start: 'top 80%' } }
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '#problem', start: 'top 80%' } }
   );
 
   gsap.fromTo('.problem-lead', 
     { opacity: 0, y: 24 }, 
-    { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', scrollTrigger: { trigger: '.problem', start: 'top 75%' } }
+    { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', scrollTrigger: { trigger: '#problem', start: 'top 75%' } }
   );
 
   const grid = document.getElementById('problemThreatsGrid');

@@ -233,7 +233,8 @@ async function checkServerConnection() {
   const textEl = document.getElementById('serverConnectionText');
 
   try {
-    const res = await fetch('/api/health', {
+    const healthUrl = (typeof API_BASE !== 'undefined' && API_BASE) ? `${API_BASE}/api/health` : '/api/health';
+    const res = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
     });
