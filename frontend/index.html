@@ -4,30 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VeriGate — Identity Verification Intelligence</title>
-  <meta name="description" content="VeriGate combines document intelligence, forensic analysis, biometric verification, and AI reasoning to detect identity anomalies in seconds." />
+  <meta name="description" content="VeriGate combines document field extraction, deterministic validation rules, error-level tampering forensics, and biometric face comparison — reconciled by Gemma AI into an explainable risk assessment." />
 
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
   <!-- Stylesheets (cache-busted for immediate mobile sync) -->
-  <link rel="stylesheet" href="css/variables.css?v=20260904_2330" />
-  <link rel="stylesheet" href="css/layout.css?v=20260904_2330" />
-  <link rel="stylesheet" href="css/landing.css?v=20260904_2330" />
-  <link rel="stylesheet" href="css/screening.css?v=20260904_2330" />
-  <link rel="stylesheet" href="css/mobile.css?v=20260904_2330" />
+  <link rel="stylesheet" href="css/variables.css?v=20260905_0110" />
+  <link rel="stylesheet" href="css/layout.css?v=20260905_0110" />
+  <link rel="stylesheet" href="css/landing.css?v=20260905_0110" />
+  <link rel="stylesheet" href="css/screening.css?v=20260905_0110" />
+  <link rel="stylesheet" href="css/mobile.css?v=20260905_0110" />
 
-  <!-- GSAP -->
+  <!-- GSAP & jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/dev-guard.js?v=20260904_2330"></script>
-  <script src="js/config.js?v=20260904_2330" defer></script>
-  <script src="js/api.js?v=20260904_2330" defer></script>
-  <script src="js/animations.js?v=20260904_2330" defer></script>
-  <script src="js/screening.js?v=20260904_2330" defer></script>
-  <script src="js/app.js?v=20260904_2330" defer></script>
+  <script src="js/dev-guard.js?v=20260905_0110"></script>
+  <script src="js/config.js?v=20260905_0110" defer></script>
+  <script src="js/api.js?v=20260905_0110" defer></script>
+  <script src="js/animations.js?v=20260905_0110" defer></script>
+  <script src="js/screening.js?v=20260905_0110" defer></script>
+  <script src="js/app.js?v=20260905_0110" defer></script>
 </head>
 <body>
 
@@ -84,12 +85,12 @@
   <div class="hero-content">
     <div class="hero-eyebrow fade-up">
       <span class="pulse-dot"></span>
-      <span>MULTIMODAL IDENTITY VERIFICATION INTELLIGENCE</span>
+      <span>IDENTITY VERIFICATION INTELLIGENCE</span>
     </div>
     <h1>
       <span class="line fade-up">Verification</span>
-      <span class="line fade-up">with an analytical</span>
-      <span class="line fade-up"><span class="accent">sixth sense.</span></span>
+      <span class="line fade-up">with a sixth</span>
+      <span class="line fade-up"><span class="accent">sense.</span></span>
     </h1>
     <p class="hero-description fade-up">
       VeriGate combines document field extraction, deterministic validation rules, error-level tampering forensics, and biometric face comparison — reconciled by Gemma AI into an explainable risk assessment.
@@ -118,15 +119,15 @@
         <div class="card-header">
           <div class="card-badge">
             <span class="card-badge-dot"></span>
-            <span class="card-badge-text" id="cardBadgeText">VERIFICATION PARADIGM</span>
+            <span class="card-badge-text" id="cardBadgeText">DEFENSE ARCHITECTURE</span>
           </div>
           <span class="card-index mono" id="cardIndexText">01 / 03</span>
         </div>
 
         <!-- Dynamic Card Body (Flipped on 3D rotation) -->
         <div class="card-body" id="cardBody">
-          <div class="card-metric-value mono" id="cardValue">Hybrid</div>
-          <h3 class="card-metric-title" id="cardTitle">Rules + AI Reasoning</h3>
+          <div class="card-metric-value mono" id="cardValue">Rules + AI</div>
+          <h3 class="card-metric-title" id="cardTitle">Deterministic &amp; Generative Defense</h3>
           <p class="card-metric-desc" id="cardDesc">
             Combines deterministic validation rules with vision-language models to verify documents and facial identity.
           </p>
@@ -137,8 +138,8 @@
               <div class="graphic-bar-fill" id="cardBarFill" style="width: 85%;"></div>
             </div>
             <div class="graphic-meta">
-              <span class="mono" id="cardMetaL">MODE: MULTIMODAL</span>
-              <span class="mono" id="cardMetaR">STRUCTURED</span>
+              <span class="mono" id="cardMetaL">RULES: DETERMINISTIC</span>
+              <span class="mono" id="cardMetaR">ARBITER: GEMMA</span>
             </div>
           </div>
         </div>
@@ -166,64 +167,45 @@
 </section>
 
 <!-- ═══════════════════════════════════════════
-     TRANSITION STRIP — Blazing Orange Threat Marquee
+     THREAT MARQUEE TICKER (Transition Strip)
      ═══════════════════════════════════════════ -->
-<div class="threat-marquee-strip" aria-hidden="true">
+<div class="threat-marquee-strip">
   <div class="marquee-track">
     <div class="marquee-content">
-      <span>INPUT QUALIFICATION</span>
-      <span class="star">★</span>
-      <span>OCR &amp; FIELD EXTRACTION</span>
-      <span class="star">★</span>
-      <span>MRZ CHECKSUM VALIDATION</span>
-      <span class="star">★</span>
-      <span>DETERMINISTIC DATE RULES</span>
-      <span class="star">★</span>
-      <span>ERROR-LEVEL COMPRESSION ANALYSIS</span>
-      <span class="star">★</span>
-      <span>BIOMETRIC FACE COMPARISON</span>
-      <span class="star">★</span>
-      <span>GEMMA AI REASONING</span>
-      <span class="star">★</span>
-      <span>COMPOSITE RISK AUDIT</span>
-      <span class="star">★</span>
+      <span>INPUT QUALIFICATION</span> <span class="star">★</span>
+      <span>OCR &amp; FIELD EXTRACTION</span> <span class="star">★</span>
+      <span>MRZ CHECK DIGITS</span> <span class="star">★</span>
+      <span>DETERMINISTIC DATE RULES</span> <span class="star">★</span>
+      <span>ERROR LEVEL ANALYSIS</span> <span class="star">★</span>
+      <span>BIOMETRIC FACE COMPARISON</span> <span class="star">★</span>
+      <span>GEMMA AI ARBITER</span> <span class="star">★</span>
+      <span>EXPLAINABLE RISK REPORT</span> <span class="star">★</span>
     </div>
     <div class="marquee-content" aria-hidden="true">
-      <span>INPUT QUALIFICATION</span>
-      <span class="star">★</span>
-      <span>OCR &amp; FIELD EXTRACTION</span>
-      <span class="star">★</span>
-      <span>MRZ CHECKSUM VALIDATION</span>
-      <span class="star">★</span>
-      <span>DETERMINISTIC DATE RULES</span>
-      <span class="star">★</span>
-      <span>ERROR-LEVEL COMPRESSION ANALYSIS</span>
-      <span class="star">★</span>
-      <span>BIOMETRIC FACE COMPARISON</span>
-      <span class="star">★</span>
-      <span>GEMMA AI REASONING</span>
-      <span class="star">★</span>
-      <span>COMPOSITE RISK AUDIT</span>
-      <span class="star">★</span>
+      <span>INPUT QUALIFICATION</span> <span class="star">★</span>
+      <span>OCR &amp; FIELD EXTRACTION</span> <span class="star">★</span>
+      <span>MRZ CHECK DIGITS</span> <span class="star">★</span>
+      <span>DETERMINISTIC DATE RULES</span> <span class="star">★</span>
+      <span>ERROR LEVEL ANALYSIS</span> <span class="star">★</span>
+      <span>BIOMETRIC FACE COMPARISON</span> <span class="star">★</span>
+      <span>GEMMA AI ARBITER</span> <span class="star">★</span>
+      <span>EXPLAINABLE RISK REPORT</span> <span class="star">★</span>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
-     THE PROBLEM — Molten Orange Threat Landscape
+     THE PROBLEM — Verification Challenges & Fraud Risks
      ═══════════════════════════════════════════ -->
-<section class="problem" id="problem">
-  <div class="problem-glow-orb top"></div>
-  <div class="problem-glow-orb bottom"></div>
-
+<section class="problem-section" id="problem">
   <div class="wrap">
     <div class="problem-header">
       <div class="problem-eyebrow fade-up">
         <span class="threat-pulse-dot"></span>
-        <span>THREAT ASSESSMENT • FRAUD CHALLENGES</span>
+        <span>VERIFICATION CHALLENGES • FRAUD RISKS</span>
       </div>
       <h2 class="problem-title fade-up">
-        Traditional identity screening often <span class="text-molten-orange">overlooks subtle</span> document and portrait discrepancies.
+        Modern identity fraud exploits gaps between <span class="text-molten-orange">isolated checks.</span>
       </h2>
       <p class="problem-lead fade-up">
         Basic visual inspection and standalone OCR frequently miss altered dates, localized image splicing, and mismatched portrait pairs. VeriGate cross-correlates deterministic rules, compression forensics, and biometric comparison into a unified analysis.
@@ -237,16 +219,16 @@
       <div class="threat-card" data-card-idx="0">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">ANOMALY 01</span>
-          <span class="threat-pill">TYPOGRAPHY</span>
+          <span class="threat-badge">CRITICAL 01</span>
+          <span class="threat-pill">DIGITAL TAMPERING</span>
         </div>
         <div class="threat-icon">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h8M8 14h4"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>
         </div>
-        <h3>Altered Typography</h3>
-        <p>Inconsistent font geometry, mismatched weights, or modified printed values that escape superficial manual review.</p>
+        <h3>Localized Splicing</h3>
+        <p>Digital cut-and-paste modifications altering dates, names, or numbers while attempting to preserve surrounding document textures.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">TYPOGRAPHICAL DISCREPANCY</span>
+          <span class="threat-indicator mono">DETECTION: ELA FORENSICS</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -255,16 +237,16 @@
       <div class="threat-card" data-card-idx="1">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">TEMPORAL 02</span>
-          <span class="threat-pill">TEMPORAL LOGIC</span>
+          <span class="threat-badge">CRITICAL 02</span>
+          <span class="threat-pill">FACE MISMATCH</span>
         </div>
         <div class="threat-icon">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><path d="m16 3 2 2-4 4"/></svg>
         </div>
-        <h3>Chronological Contradictions</h3>
-        <p>Issue dates postdating expiration, future dates of birth, negative calculated applicant ages, or credentials exceeding plausible lifespans.</p>
+        <h3>Portrait Substitution</h3>
+        <p>Discrepancies between the photo printed on the identity document and the live presented person, requiring vector-level feature comparison.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">CHRONOLOGICAL DEFECT</span>
+          <span class="threat-indicator mono">DETECTION: BIOMETRICS</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -273,16 +255,16 @@
       <div class="threat-card" data-card-idx="2">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">BIOMETRIC 03</span>
-          <span class="threat-pill">FACE COMPARISON</span>
+          <span class="threat-badge">HIGH 03</span>
+          <span class="threat-pill">EXPIRED &amp; INVALID DATES</span>
         </div>
         <div class="threat-icon">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="3"/><path d="M6 20c0-3 3-5 6-5s6 2 6 5"/><path d="m16 3 2 2-4 4"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
-        <h3>Portrait Mismatches</h3>
-        <p>Discrepancies between the photo printed on the identity document and the live presented person, requiring vector-level feature comparison.</p>
+        <h3>Date Inconsistencies</h3>
+        <p>Expired credentials, future dates of birth, or issuance dates occurring after expiration that bypass simple text extraction.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">BIOMETRIC DIVERGENCE</span>
+          <span class="threat-indicator mono">DETECTION: DETERMINISTIC RULES</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -291,16 +273,16 @@
       <div class="threat-card" data-card-idx="3">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">FORENSIC 04</span>
-          <span class="threat-pill">COMPRESSION ELA</span>
+          <span class="threat-badge">HIGH 04</span>
+          <span class="threat-pill">MRZ CHECKSUM ERRORS</span>
         </div>
         <div class="threat-icon">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M19 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M5 21H3a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
         </div>
-        <h3>Compression Discrepancies</h3>
-        <p>Error-level analysis highlights localized variance in image data, pointing to digitally altered numerals, spliced text, or pasted headshots.</p>
+        <h3>Check Digit Flaws</h3>
+        <p>Forged passport or travel document numbers that fail mathematical check-digit algorithms encoded in machine-readable zones.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">COMPRESSION ARTIFACT</span>
+          <span class="threat-indicator mono">DETECTION: MRZ ALGORITHMS</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -309,16 +291,16 @@
       <div class="threat-card" data-card-idx="4">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">SYNTAX 05</span>
-          <span class="threat-pill">CHECKSUM CHECK</span>
+          <span class="threat-badge">HIGH 05</span>
+          <span class="threat-pill">UNQUALIFIED INPUTS</span>
         </div>
         <div class="threat-icon">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M19 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M5 21H3a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m9 12 2 2 4-4"/></svg>
         </div>
-        <h3>MRZ Checksum Mismatches</h3>
-        <p>Modulo-7 and modulo-10 check digit failures between machine-readable zones and visual inspection fields when an MRZ is present.</p>
+        <h3>Defective Submissions</h3>
+        <p>Low-resolution, blurry, heavily cropped, or non-identity images that degrade downstream extraction and comparison models.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">CHECKSUM DISCREPANCY</span>
+          <span class="threat-indicator mono">DETECTION: INPUT QUALIFICATION</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -327,16 +309,16 @@
       <div class="threat-card" data-card-idx="5">
         <div class="threat-shimmer"></div>
         <div class="threat-card-top">
-          <span class="threat-badge">OPERATIONAL 06</span>
-          <span class="threat-pill">SILOED DATA</span>
+          <span class="threat-badge">ELEVATED 06</span>
+          <span class="threat-pill">UNEXPLAINED VERDICTS</span>
         </div>
         <div class="threat-icon">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-3-3.87M9 21v-2a4 4 0 0 1 3-3.87M12 7a4 4 0 1 0 0 8"/><path d="M16 3l2 2-2 2"/></svg>
         </div>
-        <h3>Fragmented Verification Tools</h3>
+        <h3>Opaque Black-Box Systems</h3>
         <p>Siloed checks that evaluate OCR, dates, and images in isolation without cross-referencing findings into a unified, evidence-based assessment.</p>
         <div class="threat-card-footer">
-          <span class="threat-indicator mono">UNLINKED EVIDENCE</span>
+          <span class="threat-indicator mono">DETECTION: GEMMA REASONING</span>
           <span class="threat-dot"></span>
         </div>
       </div>
@@ -360,12 +342,12 @@
       <div class="sense-left-col">
         <div class="sense-badge fade-up">
           <span class="sense-pulse-dot"></span>
-          <span>ANALYTICAL PERCEPTION • THE VERIGATE SENSE</span>
+          <span>VERIGATE SENSE • MULTIMODAL VERIFICATION</span>
         </div>
         
         <h2 class="sense-heading fade-up">
-          Beyond flat OCR.<br/>
-          <span class="text-molten-red">A unified framework for identity verification.</span>
+          One unified engine.<br/>
+          <span class="text-molten-red">Six specialized layers of proof.</span>
         </h2>
         
         <p class="sense-lead fade-up">
@@ -426,18 +408,18 @@
           <!-- Bottom Telemetry HUD Bar -->
           <div class="globe-telemetry-bar">
             <div class="telemetry-item">
-              <span class="tel-label mono">VERIFICATION LOGIC</span>
+              <span class="tel-label mono">SCAN FREQUENCY</span>
+              <span class="tel-value mono">CONTINUOUS ANALYSIS</span>
+            </div>
+            <div class="telemetry-divider"></div>
+            <div class="telemetry-item">
+              <span class="tel-label mono">VALIDATION LOGIC</span>
               <span class="tel-value mono">DETERMINISTIC RULES</span>
             </div>
             <div class="telemetry-divider"></div>
             <div class="telemetry-item">
-              <span class="tel-label mono">FORENSIC METHOD</span>
-              <span class="tel-value mono">ERROR-LEVEL ANALYSIS</span>
-            </div>
-            <div class="telemetry-divider"></div>
-            <div class="telemetry-item">
-              <span class="tel-label mono">REASONING ENGINE</span>
-              <span class="tel-value mono">GEMMA MULTIMODAL</span>
+              <span class="tel-label mono">ARBITRATION</span>
+              <span class="tel-value mono">GEMMA AI ARBITER</span>
             </div>
           </div>
         </div>
@@ -449,12 +431,12 @@
         
         <!-- Interactive Feature Quick-Pill Navigation -->
         <div class="sense-feature-nav-pills fade-up" id="senseFeaturePills">
-          <button class="feat-pill active" data-index="0">01 Input Check</button>
-          <button class="feat-pill" data-index="1">02 Field OCR</button>
-          <button class="feat-pill" data-index="2">03 MRZ Audit</button>
-          <button class="feat-pill" data-index="3">04 Rules</button>
+          <button class="feat-pill active" data-index="0">01 Qualification</button>
+          <button class="feat-pill" data-index="1">02 OCR &amp; Data</button>
+          <button class="feat-pill" data-index="2">03 MRZ Parity</button>
+          <button class="feat-pill" data-index="3">04 Date Rules</button>
           <button class="feat-pill" data-index="4">05 ELA Forensics</button>
-          <button class="feat-pill" data-index="5">06 Biometrics &amp; AI</button>
+          <button class="feat-pill" data-index="5">06 Face &amp; Gemma</button>
         </div>
 
         <!-- 3D Glossy Showcase Card -->
@@ -464,8 +446,8 @@
             
             <!-- Card Header -->
             <div class="sense-card-header">
-              <div class="sense-layer-badge" id="senseCardBadge">INPUT QUALITY LAYER</div>
-              <div class="sense-layer-index mono" id="senseCardIndex">FEATURE 01 / 06</div>
+              <div class="sense-layer-badge" id="senseCardBadge">PRE-FLIGHT QUALIFICATION</div>
+              <div class="sense-layer-index mono" id="senseCardIndex">01 / 06</div>
             </div>
 
             <!-- Holographic Icon & Title Block -->
@@ -478,20 +460,20 @@
               </div>
               <div class="sense-card-title-meta">
                 <h3 class="sense-card-title" id="senseCardTitle">Pre-Flight Input Qualification</h3>
-                <span class="sense-card-subtitle" id="senseCardSubtitle">Verifying image suitability before pipeline execution</span>
+                <span class="sense-card-subtitle" id="senseCardSubtitle">Gemma visual inspection verifies document and selfie suitability</span>
               </div>
             </div>
 
             <!-- Technical Narrative -->
             <p class="sense-card-desc" id="senseCardDesc">
-              Gemma evaluates uploaded document and facial portrait images prior to analysis, checking for readable text, appropriate framing, and sufficient clarity to prevent false rejections.
+              Before running downstream extraction, Gemma inspects both uploaded images to confirm document visibility, detect image category, and ensure a clear, usable frontal portrait is present.
             </p>
 
             <!-- Technical Specification Chips -->
             <div class="sense-spec-tags" id="senseCardSpecTags">
-              <span class="spec-tag mono">INPUT QUALIFICATION</span>
-              <span class="spec-tag mono">READABILITY CHECK</span>
-              <span class="spec-tag mono">PRE-FLIGHT GATEWAY</span>
+              <span class="spec-tag mono">IMAGE SUITABILITY</span>
+              <span class="spec-tag mono">FACE VISIBILITY</span>
+              <span class="spec-tag mono">FAIL-EARLY</span>
             </div>
 
             <!-- Status Bar -->
@@ -500,8 +482,8 @@
                 <div class="metric-bar-fill" id="senseCardBarFill" style="width: 88%;"></div>
               </div>
               <div class="metric-bar-labels mono">
-                <span id="senseCardMetaLeft">CHECK: GEMMA VISION</span>
-                <span id="senseCardMetaRight">PRE-QUALIFIED</span>
+                <span id="senseCardMetaLeft">INPUT: QUALIFIED</span>
+                <span id="senseCardMetaRight">STAGE 01 GATEWAY</span>
               </div>
             </div>
 
@@ -849,10 +831,16 @@
                     <div class="slot-title">Presented Person</div>
                     <div class="slot-sub">Clear frontal portrait or live capture</div>
                   </div>
-                  <button type="button" class="btn-slot-attach" aria-label="Attach Face Photo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    <span>Attach</span>
-                  </button>
+                  <div class="slot-actions">
+                    <button type="button" class="btn-slot-attach" aria-label="Attach Face Photo">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                      <span>Attach</span>
+                    </button>
+                    <button type="button" class="btn-slot-camera" onclick="event.stopPropagation(); openCameraModal()" aria-label="Use Camera">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <span>Camera</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1109,6 +1097,31 @@
       <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
       Run another screening
     </button>
+  </div>
+</div>
+
+<!-- Live Camera Capture Modal -->
+<div class="camera-modal-backdrop" id="cameraModal" style="display:none;" onclick="if(event.target===this) closeCameraModal()">
+  <div class="camera-modal-dialog">
+    <div class="camera-modal-header">
+      <div class="camera-modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Live Camera Capture</span>
+      </div>
+      <button type="button" class="camera-modal-close" onclick="closeCameraModal()" aria-label="Close modal">✕</button>
+    </div>
+    <div class="camera-preview-container">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <div class="camera-target-reticle"></div>
+      <div class="camera-status-msg" id="cameraStatusMsg">Initializing camera feed...</div>
+    </div>
+    <div class="camera-modal-actions">
+      <button type="button" class="btn-camera-cancel" onclick="closeCameraModal()">Cancel</button>
+      <button type="button" class="btn-camera-snap" id="btnCameraSnap" onclick="captureCameraSnapshot()">
+        <span class="camera-snap-circle"></span>
+        <span>Capture Photo</span>
+      </button>
+    </div>
   </div>
 </div>
 

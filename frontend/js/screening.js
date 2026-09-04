@@ -17,6 +17,10 @@ function triggerFile(kind) {
 function handleFile(kind, files) {
   if (!files || !files[0]) return;
   session[kind] = files[0];
+  if (kind === 'doc') {
+    if (session.docPreviewUrl) URL.revokeObjectURL(session.docPreviewUrl);
+    session.docPreviewUrl = URL.createObjectURL(files[0]);
+  }
   renderSlot(kind);
   updateIntakeStatus();
 }
@@ -48,6 +52,10 @@ function renderSlot(kind) {
 
 function clearSlot(kind) {
   session[kind] = null;
+  if (kind === 'doc' && session.docPreviewUrl) {
+    URL.revokeObjectURL(session.docPreviewUrl);
+    session.docPreviewUrl = null;
+  }
   const slot = document.getElementById(kind === 'doc' ? 'slotDoc' : 'slotFace');
   const slotContent = document.getElementById(kind === 'doc' ? 'slotDocContent' : 'slotFaceContent');
   const input = document.getElementById(kind === 'doc' ? 'fileDoc' : 'fileFace');
@@ -85,10 +93,16 @@ function clearSlot(kind) {
           <div class="slot-title">Presented Person</div>
           <div class="slot-sub">Clear frontal portrait or live capture</div>
         </div>
-        <button type="button" class="btn-slot-attach" aria-label="Attach Face Photo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Attach</span>
-        </button>
+        <div class="slot-actions">
+          <button type="button" class="btn-slot-attach" aria-label="Attach Face Photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Attach</span>
+          </button>
+          <button type="button" class="btn-slot-camera" onclick="event.stopPropagation(); openCameraModal()" aria-label="Use Camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Camera</span>
+          </button>
+        </div>
       `;
     }
   }
@@ -524,10 +538,28 @@ function renderDynamicResults(r) {
   const faceCard = document.createElement('div');
   faceCard.className = 'res-card';
   const isFaceMatch = r.face.is_match === true;
-  const faceMatchLabel = r.face.error_message ? 'INCONCLUSIVE' : (isFaceMatch ? 'MATCH' : 'MISMATCH');
-  const faceColor = isFaceMatch ? 'var(--verified)' : 'var(--crimson)';
-  const dist = r.face.distance !== undefined ? Number(r.face.distance).toFixed(3) : '0.284';
-  const thresh = r.face.threshold !== undefined ? Number(r.face.threshold).toFixed(3) : '0.600';
+  const faceMatchLabel = r.face.error_message ? 'INCONCLUSIVE' : (isFaceMatch ? 'MATCH CONFIRMED' : 'MISMATCH DETECTED');
+  const faceColor = r.face.error_message ? 'var(--gold-glow)' : (isFaceMatch ? 'var(--verified)' : 'var(--crimson)');
+  const hasDistance = r.face.distance !== undefined && r.face.distance !== null;
+  const distNum = hasDistance ? Number(r.face.distance) : null;
+  const threshNum = r.face.threshold !== undefined && r.face.threshold !== null ? Number(r.face.threshold) : null;
+  const distStr = distNum !== null ? distNum.toFixed(3) : 'N/A';
+  const threshStr = threshNum !== null ? threshNum.toFixed(3) : 'N/A';
+  const metricName = (r.face.distance_metric || 'Cosine').toUpperCase();
+  const modelName = r.face.model_name || 'Facenet512';
+
+  let meterPct = 0;
+  let faceMetricText = '';
+  if (r.face.error_message) {
+    faceMetricText = escapeHtml(r.face.error_message);
+    meterPct = 0;
+  } else if (hasDistance && threshNum !== null && threshNum > 0) {
+    meterPct = Math.max(0, Math.min(100, Math.round(Math.max(0, 1 - (distNum / (threshNum * 2))) * 100)));
+    faceMetricText = isFaceMatch ? `${meterPct}% BIOMETRIC SIMILARITY` : `${meterPct}% SIMILARITY (BELOW THRESHOLD)`;
+  } else {
+    faceMetricText = isFaceMatch ? 'BIOMETRIC MATCH CONFIRMED' : 'BIOMETRIC MISMATCH DETECTED';
+    meterPct = isFaceMatch ? 100 : 25;
+  }
 
   faceCard.innerHTML = `
     <div class="res-card-header">
@@ -538,14 +570,14 @@ function renderDynamicResults(r) {
     </div>
     <div class="res-face-box">
       <div class="res-face-status-row">
-        <div class="res-face-metric" style="color:${faceColor};">${isFaceMatch ? '98.4% CONFIDENCE' : '24.1% MATCH'}</div>
+        <div class="res-face-metric" style="color:${faceColor};">${faceMetricText}</div>
         <div class="mono" style="font-size:11px;color:var(--ink-muted);">DOCUMENT-TO-PORTRAIT</div>
       </div>
       <div class="res-face-meter">
-        <div class="res-face-fill" style="width:${isFaceMatch ? '98.4%' : '24%'};background:${faceColor};"></div>
+        <div class="res-face-fill" style="width:${meterPct}%;background:${faceColor};"></div>
       </div>
       <div class="res-face-sub mono">
-        Euclidean Distance: <strong>${dist}</strong> (Threshold: ${thresh}) • Model: ${escapeHtml(r.face.model_name || 'FaceNet-512-Cosine')}
+        ${metricName} Distance: <strong>${distStr}</strong> (Threshold: ${threshStr}) • Model: ${escapeHtml(modelName)}
       </div>
     </div>
   `;
@@ -556,6 +588,12 @@ function renderDynamicResults(r) {
   tampCard.className = 'res-card';
   const isTampered = Boolean(r.tampering.suspicious);
   const tampScorePct = Math.round((r.tampering.score || 0) * 100);
+  const heatmapUrl = r.tampering.evidenceImagePath ? `${API_BASE}/${r.tampering.evidenceImagePath.replace(/^\/+/, '')}` : null;
+  const originalDocUrl = session.docPreviewUrl || (session.doc ? URL.createObjectURL(session.doc) : null);
+  if (originalDocUrl && !session.docPreviewUrl) {
+    session.docPreviewUrl = originalDocUrl;
+  }
+
   tampCard.innerHTML = `
     <div class="res-card-header">
       <div class="res-card-title">
@@ -574,8 +612,28 @@ function renderDynamicResults(r) {
           <div class="res-id-val mono">${r.tampering.signals.filter(s => s.is_suspicious).length} DETECTED</div>
         </div>
       </div>
-      ${r.tampering.evidenceImagePath ? `
-        <img class="res-heatmap-img" src="${API_BASE}/${r.tampering.evidenceImagePath.replace(/^\/+/, '')}" alt="ELA Heatmap Evidence" />
+      ${heatmapUrl ? `
+        <div class="forensic-view-wrapper">
+          <div class="forensic-view-toolbar">
+            <span class="forensic-view-label mono">EVIDENCE VIEW:</span>
+            <div class="forensic-toggle-group">
+              <button type="button" class="btn-forensic-toggle active" id="btnToggleEla" onclick="toggleForensicView('ela')">
+                <span class="toggle-dot ela"></span>
+                <span>ELA Heatmap</span>
+              </button>
+              ${originalDocUrl ? `
+                <button type="button" class="btn-forensic-toggle" id="btnToggleOrig" onclick="toggleForensicView('orig')">
+                  <span class="toggle-dot orig"></span>
+                  <span>Original Document</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+          <div class="forensic-image-viewport">
+            <img class="res-heatmap-img" id="forensicDisplayImg" src="${heatmapUrl}" alt="ELA Heatmap Evidence" data-ela-src="${heatmapUrl}" ${originalDocUrl ? `data-orig-src="${originalDocUrl}"` : ''} />
+            <div class="forensic-image-caption mono" id="forensicDisplayCaption">SHOWING: COMPRESSION RESIDUAL HEATMAP (ELA)</div>
+          </div>
+        </div>
       ` : `
         <div class="mono" style="font-size:11.5px;color:var(--ink-muted);padding:8px 0;">
           ${isTampered ? 'Compression gradient variance indicates surface manipulation.' : 'Zero high-frequency error discrepancies detected across document surface.'}
@@ -700,10 +758,18 @@ function renderDynamicResults(r) {
   `;
   container.appendChild(reasoningCard);
 
-  // 11. RUN AGAIN BUTTON
+  // 11. ACTION BUTTONS: EXPORT AUDIT REPORT (JSON & PDF) & RUN AGAIN
   const rerunRow = document.createElement('div');
   rerunRow.className = 'res-run-again-row';
   rerunRow.innerHTML = `
+    <button type="button" class="btn-res-export" onclick="exportScreeningReport('json')" aria-label="Export Forensic JSON Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      <span>Export JSON</span>
+    </button>
+    <button type="button" class="btn-res-export btn-res-pdf" onclick="exportScreeningReport('pdf')" aria-label="Export Forensic PDF Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Export PDF</span>
+    </button>
     <button type="button" class="btn-res-run-again" onclick="resetScreeningWorkstation()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
       <span>Run Another Screening</span>
@@ -751,6 +817,7 @@ function renderDynamicResults(r) {
 }
 
 function resetScreeningWorkstation() {
+  closeCameraModal();
   screeningActive = false;
   setRunButtonState('idle');
   clearSlot('doc');
@@ -780,6 +847,502 @@ function resetScreeningWorkstation() {
   }
   if (processing) processing.style.display = 'none';
   updateIntakeStatus();
+}
+
+/* ═══════════════════════════════════
+   FORENSIC EVIDENCE TOGGLE (ORIGINAL / ELA)
+   ═══════════════════════════════════ */
+
+function toggleForensicView(mode) {
+  const img = document.getElementById('forensicDisplayImg');
+  const caption = document.getElementById('forensicDisplayCaption');
+  const btnEla = document.getElementById('btnToggleEla');
+  const btnOrig = document.getElementById('btnToggleOrig');
+  if (!img) return;
+
+  if (mode === 'orig') {
+    const origSrc = img.getAttribute('data-orig-src');
+    if (origSrc) {
+      img.src = origSrc;
+      img.alt = 'Original Document Credential';
+      if (caption) caption.textContent = 'SHOWING: ORIGINAL DOCUMENT CREDENTIAL';
+      if (btnOrig) btnOrig.classList.add('active');
+      if (btnEla) btnEla.classList.remove('active');
+    }
+  } else {
+    const elaSrc = img.getAttribute('data-ela-src');
+    if (elaSrc) {
+      img.src = elaSrc;
+      img.alt = 'ELA Heatmap Evidence';
+      if (caption) caption.textContent = 'SHOWING: COMPRESSION RESIDUAL HEATMAP (ELA)';
+      if (btnEla) btnEla.classList.add('active');
+      if (btnOrig) btnOrig.classList.remove('active');
+    }
+  }
+}
+
+/* ═══════════════════════════════════
+   EXPORT SCREENING REPORT (JSON & PDF)
+   ═══════════════════════════════════ */
+
+function exportScreeningReport(format = 'json') {
+  if (!session.report) return;
+  const r = session.report;
+
+  // Build clean report payload from actual screening data
+  const exportPayload = {
+    sessionId: r.auditInfo?.sessionId || session.sessionId || 'VG-REPORT',
+    timestamp: new Date().toISOString(),
+    decision: r.decision,
+    riskScore: r.riskScore,
+    riskLevel: r.riskLevel,
+    summary: r.summary,
+    aiReasoning: r.reasoning,
+    extractedIdentity: r.identity,
+    documentValidation: {
+      status: r.documentStatus,
+      checks: r.checks
+    },
+    faceVerification: r.face,
+    tamperingEvidence: r.tampering,
+    dateIntelligence: r.dateIntelligence,
+    referenceCheck: r.referenceCheck,
+    riskFactors: r.riskFactors,
+    auditInfo: r.auditInfo
+  };
+
+  if (format === 'json') {
+    const jsonStr = JSON.stringify(exportPayload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `verigate-audit-report-${exportPayload.sessionId}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    return;
+  }
+
+  if (format === 'pdf') {
+    generatePdfReport(r, exportPayload);
+  }
+}
+
+function generatePdfReport(r, payload) {
+  const jspdfModule = window.jspdf;
+  if (!jspdfModule || !jspdfModule.jsPDF) {
+    printAuditReport(r, payload);
+    return;
+  }
+
+  try {
+    const { jsPDF } = jspdfModule;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 14;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = 0;
+
+    function checkPageBreak(neededSpace) {
+      if (y + neededSpace > pageHeight - 16) {
+        doc.addPage();
+        y = 16;
+      }
+    }
+
+    // Top Header Band (Obsidian with crimson accent)
+    doc.setFillColor(11, 15, 25);
+    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setFillColor(255, 42, 84);
+    doc.rect(0, 27, pageWidth, 1.5, 'F');
+
+    // Brand & Document Subtitle
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('VERIGATE', margin, 12);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225);
+    doc.text('IDENTITY VERIFICATION INTELLIGENCE • FORENSIC AUDIT REPORT', margin, 18);
+
+    // Meta Right
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`SESSION: ${payload.sessionId}`, pageWidth - margin, 12, { align: 'right' });
+    doc.text(`DATE: ${payload.timestamp.substring(0, 19).replace('T', ' ')} UTC`, pageWidth - margin, 18, { align: 'right' });
+
+    y = 35;
+
+    // Decision & Risk Banner
+    const dec = String(payload.decision || 'REVIEW').toUpperCase();
+    let bannerColor = [245, 158, 11]; // amber
+    if (dec === 'APPROVE') bannerColor = [16, 185, 129]; // green
+    if (dec === 'REJECT') bannerColor = [239, 68, 68]; // red
+
+    doc.setFillColor(bannerColor[0], bannerColor[1], bannerColor[2]);
+    doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(`FINAL VERDICT: ${dec}`, margin + 6, y + 8);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`RISK SCORE: ${payload.riskScore} / 100   |   RATING: ${String(payload.riskLevel || '').toUpperCase()}`, margin + 6, y + 15);
+
+    y += 26;
+
+    // Executive Summary
+    if (payload.summary) {
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, y, contentWidth, 14, 1.5, 1.5, 'FD');
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(30, 41, 59);
+      const summaryLines = doc.splitTextToSize(`"${payload.summary}"`, contentWidth - 8);
+      doc.text(summaryLines, margin + 4, y + 6);
+      y += 18;
+    }
+
+    // 1. AI Reasoning Section
+    if (payload.aiReasoning) {
+      checkPageBreak(25);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text('1. AI EVIDENCE ARBITRATION (GEMMA REASONING)', margin, y);
+      y += 5;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(51, 65, 85);
+      const reasoningLines = doc.splitTextToSize(payload.aiReasoning, contentWidth);
+      doc.text(reasoningLines, margin, y);
+      y += (reasoningLines.length * 4) + 5;
+    }
+
+    // 2. Identity Details Table
+    checkPageBreak(35);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('2. EXTRACTED IDENTITY CREDENTIALS', margin, y);
+    y += 5;
+
+    if (Array.isArray(payload.extractedIdentity) && payload.extractedIdentity.length > 0) {
+      const colW = contentWidth / 2;
+      doc.setFontSize(8);
+      payload.extractedIdentity.forEach((f, idx) => {
+        const col = idx % 2;
+        const xPos = margin + (col * colW);
+        if (col === 0 && idx > 0) y += 5;
+        checkPageBreak(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(71, 85, 105);
+        doc.text(`${f.field}:`, xPos, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(15, 23, 42);
+        doc.text(String(f.value || 'N/A'), xPos + 34, y);
+      });
+      y += 8;
+    }
+
+    // 3. Document Validation Checks
+    checkPageBreak(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`3. DETERMINISTIC CHECKS (${String(payload.documentValidation?.status || '').toUpperCase()})`, margin, y);
+    y += 5;
+
+    const checks = payload.documentValidation?.checks || [];
+    doc.setFontSize(7.5);
+    checks.forEach(c => {
+      checkPageBreak(5);
+      const isPass = String(c.status || '').toLowerCase() === 'passed';
+      doc.setFont('helvetica', 'bold');
+      if (isPass) {
+        doc.setTextColor(16, 185, 129);
+        doc.text('[PASS]', margin, y);
+      } else {
+        doc.setTextColor(239, 68, 68);
+        doc.text('[FAIL]', margin, y);
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(30, 41, 59);
+      doc.text(String(c.message || c.check_name || 'Validation check'), margin + 14, y);
+      y += 4.5;
+    });
+    y += 4;
+
+    // 4. Biometric Face Correspondence & Tampering Forensics
+    checkPageBreak(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('4. FORENSICS & BIOMETRIC CORRESPONDENCE', margin, y);
+    y += 5;
+
+    // Biometrics
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text('Biometric Verification:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    const faceMatch = payload.faceVerification?.is_match ? 'MATCH CONFIRMED' : 'MISMATCH DETECTED';
+    const distVal = payload.faceVerification?.distance != null ? Number(payload.faceVerification.distance).toFixed(3) : 'N/A';
+    const threshVal = payload.faceVerification?.threshold != null ? Number(payload.faceVerification.threshold).toFixed(3) : 'N/A';
+    const metric = (payload.faceVerification?.distance_metric || 'Cosine').toUpperCase();
+    doc.setTextColor(payload.faceVerification?.is_match ? 16 : 239, payload.faceVerification?.is_match ? 185 : 68, payload.faceVerification?.is_match ? 129 : 68);
+    doc.text(`${faceMatch}   (Distance: ${distVal} / Threshold: ${threshVal} • ${metric})`, margin + 36, y);
+    y += 5.5;
+
+    // Tampering
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(71, 85, 105);
+    doc.text('Compression Forensics:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    const isTamp = Boolean(payload.tamperingEvidence?.suspicious);
+    const tampScore = payload.tamperingEvidence?.score != null ? Number(payload.tamperingEvidence.score).toFixed(2) : '0.00';
+    doc.setTextColor(isTamp ? 239 : 16, isTamp ? 68 : 185, isTamp ? 68 : 129);
+    doc.text(`${isTamp ? 'SUSPICIOUS ARTIFACTS' : 'PRISTINE / VERIFIED'}   (Score: ${tampScore})`, margin + 36, y);
+    y += 8;
+
+    // 5. Risk Factors
+    checkPageBreak(25);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('5. ITEMIZED RISK FACTORS', margin, y);
+    y += 5;
+
+    const factors = payload.riskFactors || [];
+    doc.setFontSize(7.5);
+    if (factors.length === 0) {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text('• Zero anomalous risk factors identified during multi-stage evaluation.', margin, y);
+      y += 5.5;
+    } else {
+      factors.forEach(f => {
+        checkPageBreak(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(185, 28, 28);
+        const fText = doc.splitTextToSize(`• ${f.description || f.rule || 'Elevated anomaly'} (Impact: +${f.score_impact || 0})`, contentWidth);
+        doc.text(fText, margin, y);
+        y += (fText.length * 3.8);
+      });
+    }
+
+    // Bottom Compliance Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.text('VERIGATE FORENSIC INTELLIGENCE ENGINE • DUAL LICENSED APACHE 2.0 / MIT • AUDITED', margin, pageHeight - 7);
+      doc.text(`PAGE ${i} OF ${totalPages}`, pageWidth - margin, pageHeight - 7, { align: 'right' });
+    }
+
+    doc.save(`verigate-audit-report-${payload.sessionId}.pdf`);
+  } catch (err) {
+    console.error('jsPDF generation error, switching to print view:', err);
+    printAuditReport(r, payload);
+  }
+}
+
+function printAuditReport(r, payload) {
+  const printWindow = window.open('', '_blank', 'width=850,height=1000');
+  if (!printWindow) {
+    alert('Pop-up blocked. Please allow pop-ups to print or export the PDF report.');
+    return;
+  }
+
+  const dec = String(payload.decision || 'REVIEW').toUpperCase();
+  const decColor = dec === 'APPROVE' ? '#10b981' : dec === 'REJECT' ? '#ef4444' : '#f59e0b';
+
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>VeriGate Audit Report — ${escapeHtml(payload.sessionId)}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; margin: 24px; line-height: 1.5; font-size: 13px; }
+    .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+    .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .meta { font-size: 11px; text-align: right; color: #64748b; }
+    .verdict-box { background: ${decColor}; color: #fff; padding: 14px 18px; border-radius: 8px; margin-bottom: 16px; }
+    .verdict-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; font-style: italic; margin-bottom: 16px; }
+    .section-title { font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 18px; margin-bottom: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    .item-label { font-size: 11px; color: #64748b; font-weight: 600; }
+    .item-val { font-size: 12px; font-weight: 600; color: #0f172a; }
+    .check-pass { color: #10b981; font-weight: 700; }
+    .check-fail { color: #ef4444; font-weight: 700; }
+    .footer { margin-top: 28px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 10px; color: #94a3b8; text-align: center; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">VERIGATE AUDIT REPORT</div>
+      <div class="sub">Identity Verification Intelligence • Explainable Multi-Modal Forensic Engine</div>
+    </div>
+    <div class="meta">
+      <div>Session: ${escapeHtml(payload.sessionId)}</div>
+      <div>Date: ${escapeHtml(payload.timestamp.substring(0, 19).replace('T', ' '))} UTC</div>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <div class="verdict-title">VERDICT: ${dec}</div>
+    <div>Risk Score: ${payload.riskScore}/100 &bull; Risk Level: ${escapeHtml(String(payload.riskLevel || '').toUpperCase())}</div>
+  </div>
+
+  ${payload.summary ? `<div class="summary-box">“${escapeHtml(payload.summary)}”</div>` : ''}
+
+  <div class="section-title">1. AI EVIDENCE ARBITRATION (GEMMA REASONING)</div>
+  <p>${escapeHtml(payload.aiReasoning || 'N/A')}</p>
+
+  <div class="section-title">2. EXTRACTED IDENTITY CREDENTIALS</div>
+  <div class="grid">
+    ${(payload.extractedIdentity || []).map(f => `
+      <div><span class="item-label">${escapeHtml(f.field)}:</span> <span class="item-val">${escapeHtml(f.value)}</span></div>
+    `).join('')}
+  </div>
+
+  <div class="section-title">3. DETERMINISTIC VALIDATION CHECKS (${escapeHtml(String(payload.documentValidation?.status || '').toUpperCase())})</div>
+  <div>
+    ${(payload.documentValidation?.checks || []).map(c => {
+      const isPass = String(c.status || '').toLowerCase() === 'passed';
+      return `<div><span class="${isPass ? 'check-pass' : 'check-fail'}">[${isPass ? 'PASS' : 'FAIL'}]</span> ${escapeHtml(c.message || c.check_name || 'Check')}</div>`;
+    }).join('')}
+  </div>
+
+  <div class="section-title">4. FORENSIC EVIDENCE &amp; BIOMETRICS</div>
+  <div><strong>Biometric Match:</strong> ${payload.faceVerification?.is_match ? 'CONFIRMED' : 'MISMATCH'} (Distance: ${payload.faceVerification?.distance ?? 'N/A'} / Threshold: ${payload.faceVerification?.threshold ?? 'N/A'})</div>
+  <div><strong>Tampering Status:</strong> ${payload.tamperingEvidence?.suspicious ? 'SUSPICIOUS ARTIFACTS' : 'PRISTINE / VERIFIED'} (Score: ${payload.tamperingEvidence?.score ?? '0.00'})</div>
+
+  <div class="section-title">5. RISK FACTORS</div>
+  ${(payload.riskFactors || []).length > 0 ? (payload.riskFactors || []).map(f => `
+    <div style="color:#b91c1c;">&bull; ${escapeHtml(f.description || f.rule || 'Elevated risk anomaly')} (+${f.score_impact || 0})</div>
+  `).join('') : '<div>Zero anomalous risk factors identified.</div>'}
+
+  <div class="footer">
+    VeriGate Open-Source Identity Intelligence &bull; Confidential Compliance Record &bull; Dual-licensed Apache 2.0 &amp; MIT
+  </div>
+</body>
+</html>`;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+  }, 400);
+}
+
+/* ═══════════════════════════════════
+   LIVE CAMERA INPUT (USE CAMERA)
+   ═══════════════════════════════════ */
+
+let cameraStream = null;
+
+async function openCameraModal() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+  const statusMsg = document.getElementById('cameraStatusMsg');
+  const snapBtn = document.getElementById('btnCameraSnap');
+
+  if (!modal || !video) return;
+
+  modal.style.display = 'flex';
+  if (statusMsg) {
+    statusMsg.style.display = 'block';
+    statusMsg.textContent = 'Requesting camera permissions...';
+  }
+  if (snapBtn) snapBtn.disabled = true;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (statusMsg) {
+      statusMsg.textContent = 'Camera API not supported in this browser. Please attach an image file instead.';
+    }
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user'
+      },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+    await video.play();
+    if (statusMsg) statusMsg.style.display = 'none';
+    if (snapBtn) snapBtn.disabled = false;
+  } catch (err) {
+    console.warn('Camera access error:', err);
+    let msg = 'Camera access was denied or is unavailable. Please grant camera permissions or attach a photo.';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'Camera permission was denied. Please allow camera access in your browser or attach an image file.';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      msg = 'No camera device detected on this system. Please attach an image file.';
+    }
+    if (statusMsg) {
+      statusMsg.style.display = 'block';
+      statusMsg.textContent = msg;
+    }
+    if (snapBtn) snapBtn.disabled = true;
+  }
+}
+
+function closeCameraModal() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  if (video) video.srcObject = null;
+  if (modal) modal.style.display = 'none';
+}
+
+function captureCameraSnapshot() {
+  const video = document.getElementById('cameraVideo');
+  if (!video || !video.videoWidth) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const file = new File([blob], `live_capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    closeCameraModal();
+    handleFile('face', [file]);
+  }, 'image/jpeg', 0.95);
 }
 
 /* ═══════════════════════════════════
