@@ -1,0 +1,542 @@
+================================================================================
+VERIGATE — IDENTITY VERIFICATION INTELLIGENCE
+COMPLETE ON-SCREEN USER-FACING TEXT CONTENT
+================================================================================
+
+[BROWSER TAB / METADATA]
+Title: VeriGate — Identity Verification Intelligence
+Description: VeriGate combines document field extraction, deterministic validation rules, error-level tampering forensics, and biometric face comparison — reconciled by Gemma AI into an explainable risk assessment.
+
+
+================================================================================
+1. NAVIGATION BAR (FLOATING LIQUID GLASS NAVBAR)
+================================================================================
+Brand Name: VERIGATE
+Navigation Links:
+  - System
+  - Sense
+  - Pipeline
+  - Screening
+Primary Action Button: Start Screening
+
+
+================================================================================
+2. HERO SECTION
+================================================================================
+Eyebrow: IDENTITY VERIFICATION INTELLIGENCE
+
+Main Heading:
+  Verification
+  with a sixth
+  sense.
+
+Description:
+  VeriGate combines document field extraction, deterministic validation rules,
+  error-level tampering forensics, and biometric face comparison — reconciled
+  by Gemma AI into an explainable risk assessment.
+
+Call-to-Action Buttons:
+  - [Primary]: Start Screening
+  - [Secondary]: Explore the System
+
+Hero Right — 3D Metric Showcase Cards:
+  Slide 01 / 03:
+    Badge: DEFENSE ARCHITECTURE
+    Index: 01 / 03
+    Metric Value: Rules + AI
+    Title: Deterministic & Generative Defense
+    Description: Combines deterministic validation rules with vision-language models to verify documents and facial identity.
+    Metadata Left: RULES: DETERMINISTIC
+    Metadata Right: ARBITER: GEMMA
+
+  Slide 02 / 03:
+    Badge: PIPELINE ARCHITECTURE
+    Index: 02 / 03
+    Metric Value: 7-Stage
+    Title: Sequential Evidence Analysis
+    Description: Input qualification, OCR, MRZ validation, rule verification, ELA forensics, biometric matching, and final synthesis.
+    Metadata Left: PIPELINE: ACTIVE
+    Metadata Right: MULTI-STAGE
+
+  Slide 03 / 03:
+    Badge: EXPLAINABLE INTELLIGENCE
+    Index: 03 / 03
+    Metric Value: Evidence
+    Title: Itemized Evidence & Risk Reports
+    Description: Generates itemized risk factors, forensic evidence metrics, and reasoned verdicts rather than opaque pass/fail scores.
+    Metadata Left: REASONING: EXPLAINABLE
+    Metadata Right: SYNTHESIS: EVIDENCE
+
+
+================================================================================
+3. THREAT MARQUEE TICKER (TRANSITION STRIP)
+================================================================================
+  - INPUT QUALIFICATION ★
+  - OCR & FIELD EXTRACTION ★
+  - MRZ CHECK DIGITS ★
+  - DETERMINISTIC DATE RULES ★
+  - ERROR LEVEL ANALYSIS ★
+  - BIOMETRIC FACE COMPARISON ★
+  - GEMMA AI ARBITER ★
+  - EXPLAINABLE RISK REPORT ★
+
+
+================================================================================
+4. THE PROBLEM — VERIFICATION CHALLENGES & FRAUD RISKS
+================================================================================
+Eyebrow: VERIFICATION CHALLENGES • FRAUD RISKS
+Heading: Modern identity fraud exploits gaps between isolated checks.
+Lead Paragraph:
+  Basic visual inspection and standalone OCR frequently miss altered dates,
+  localized image splicing, and mismatched portrait pairs. VeriGate
+  cross-correlates deterministic rules, compression forensics, and biometric
+  comparison into a unified analysis.
+
+Threat Cards:
+  Card 01:
+    Badge: CRITICAL 01
+    Pill: DIGITAL TAMPERING
+    Title: Localized Splicing
+    Description: Digital cut-and-paste modifications altering dates, names, or numbers while attempting to preserve surrounding document textures.
+    Footer Indicator: DETECTION: ELA FORENSICS
+
+  Card 02:
+    Badge: CRITICAL 02
+    Pill: FACE MISMATCH
+    Title: Portrait Substitution
+    Description: Discrepancies between the photo printed on the identity document and the live presented person, requiring vector-level feature comparison.
+    Footer Indicator: DETECTION: BIOMETRICS
+
+  Card 03:
+    Badge: HIGH 03
+    Pill: EXPIRED & INVALID DATES
+    Title: Date Inconsistencies
+    Description: Expired credentials, future dates of birth, or issuance dates occurring after expiration that bypass simple text extraction.
+    Footer Indicator: DETECTION: DETERMINISTIC RULES
+
+  Card 04:
+    Badge: HIGH 04
+    Pill: MRZ CHECKSUM ERRORS
+    Title: Check Digit Flaws
+    Description: Forged passport or travel document numbers that fail mathematical check-digit algorithms encoded in machine-readable zones.
+    Footer Indicator: DETECTION: MRZ ALGORITHMS
+
+  Card 05:
+    Badge: HIGH 05
+    Pill: UNQUALIFIED INPUTS
+    Title: Defective Submissions
+    Description: Low-resolution, blurry, heavily cropped, or non-identity images that degrade downstream extraction and comparison models.
+    Footer Indicator: DETECTION: INPUT QUALIFICATION
+
+  Card 06:
+    Badge: ELEVATED 06
+    Pill: UNEXPLAINED VERDICTS
+    Title: Opaque Black-Box Systems
+    Description: Siloed checks that evaluate OCR, dates, and images in isolation without cross-referencing findings into a unified, evidence-based assessment.
+    Footer Indicator: DETECTION: GEMMA REASONING
+
+
+================================================================================
+5. VERIGATE SENSE — MULTIMODAL VERIFICATION
+================================================================================
+Badge: VERIGATE SENSE • MULTIMODAL VERIFICATION
+Heading:
+  One unified engine.
+  Six specialized layers of proof.
+Lead Paragraph:
+  Rather than treating verification as a single pass-or-fail scan, VeriGate
+  correlates document fields, mathematical check digits when present,
+  error-level compression traces, and biometric facial comparison into an
+  evidence-grounded assessment.
+
+VeriGate Sense Red Globe Telemetry HUD:
+  - SCAN FREQUENCY: CONTINUOUS ANALYSIS
+  - VALIDATION LOGIC: DETERMINISTIC RULES
+  - ARBITRATION: GEMMA AI ARBITER
+
+Quick-Pill Navigation:
+  [01 Qualification] [02 OCR & Data] [03 MRZ Parity] [04 Date Rules] [05 ELA Forensics] [06 Face & Gemma]
+
+VeriGate Sense Feature Showcase Slides:
+  Slide 01 / 06:
+    Badge: PRE-FLIGHT QUALIFICATION
+    Index: 01 / 06
+    Title: Pre-Flight Input Qualification
+    Subtitle: Gemma visual inspection verifies document and selfie suitability
+    Description: Before running downstream extraction, Gemma inspects both uploaded images to confirm document visibility, detect image category, and ensure a clear, usable frontal portrait is present.
+    Specification Tags:
+      - IMAGE SUITABILITY
+      - FACE VISIBILITY
+      - FAIL-EARLY
+    Telemetry Terminal:
+      Title: QUALIFICATION AUDIT • SENSE 01
+      Status: PRE-FLIGHT
+      Lines:
+        > ANALYZING DOCUMENT IMAGE GEOMETRY... [SUITABLE]
+        > ANALYZING PRESENTED PERSON PORTRAIT... [SUITABLE]
+        > DOCUMENT CATEGORY: PASSPORT / NATIONAL ID
+    Metric Bar:
+      Left: INPUT: QUALIFIED
+      Right: STAGE 01 GATEWAY
+
+  Slide 02 / 06:
+    Badge: DOCUMENT OCR
+    Index: 02 / 06
+    Title: OCR & Field Extraction
+    Subtitle: Reading text fields from document surface
+    Description: Extracts textual identity credentials including full name, document number, date of birth, expiration date, and issuing authority for downstream rule checking.
+    Specification Tags:
+      - FIELD EXTRACTION
+      - TEXT NORMALIZATION
+      - TYPOGRAPHIC SCAN
+    Telemetry Terminal:
+      Title: OCR TELEMETRY • SENSE 02
+      Status: EXTRACTION
+      Lines:
+        > LOCATING TEXT REGIONS... [OK]
+        > PARSED: SURNAME, GIVEN NAMES, DOC_NUM, DOB, EXPIRY
+        > NORMALIZING ACCENTED CHARACTERS... [DONE]
+    Metric Bar:
+      Left: EXTRACTION: STRUCTURED
+      Right: DATA ENGINE
+
+  Slide 03 / 06:
+    Badge: MRZ PARITY
+    Index: 03 / 06
+    Title: MRZ Check Digit Verification
+    Subtitle: Mathematical check-digit validation when MRZ is present
+    Description: When an MRZ is present on passports or machine-readable IDs, VeriGate recalculates modular check digits on document numbers, dates of birth, and expiration dates.
+    Specification Tags:
+      - CONDITIONAL MRZ
+      - MOD-7 CHECK DIGITS
+      - COMPOSITE INTEGRITY
+    Telemetry Terminal:
+      Title: MRZ KERNEL • SENSE 03
+      Status: VALIDATING
+      Lines:
+        > CHECKING DOCUMENT MRZ PRESENCE... [FOUND]
+        > COMPUTING LINE 1 & LINE 2 CHECK DIGITS... [MATCH]
+        > COMPOSITE CHECKSUM: VALID PARITY
+    Metric Bar:
+      Left: MRZ: VERIFIED
+      Right: CONDITIONAL AUDIT
+
+  Slide 04 / 06:
+    Badge: DETERMINISTIC RULE LAYER
+    Index: 04 / 06
+    Title: Deterministic Document Validation
+    Subtitle: Mathematical checks on dates, ages, and chronological consistency
+    Description: Evaluates explicit business logic: confirms DOB is in the past, computes applicant calendar age, validates that issuance predates expiration, and flags expired credentials.
+    Specification Tags:
+      - CALENDAR LOGIC
+      - AGE COMPUTATION
+      - EXPIRY EVALUATION
+    Telemetry Terminal:
+      Title: RULE ENGINE • SENSE 04
+      Status: EXECUTING
+      Lines:
+        > EVALUATING DOB < CURRENT_DATE... [PASS]
+        > COMPUTING CALENDAR AGE: 48 YEARS
+        > CHECKING EXPIRY > CURRENT_DATE... [ACTIVE]
+    Metric Bar:
+      Left: RULES: DETERMINISTIC
+      Right: ZERO HALLUCINATIONS
+
+  Slide 05 / 06:
+    Badge: COMPRESSION ANALYSIS
+    Index: 05 / 06
+    Title: Tampering Forensics (ELA)
+    Subtitle: Error Level Analysis detecting image resave differentials
+    Description: Re-compresses the document image at fixed JPEG quality levels and computes residual pixel error maps to reveal localized splicing, cloned fields, or font tampering.
+    Specification Tags:
+      - ERROR LEVEL ANALYSIS
+      - SPLICING DETECTION
+      - PIXEL RESIDUALS
+    Telemetry Terminal:
+      Title: ELA ENGINE • SENSE 05
+      Status: ANALYZING
+      Lines:
+        > GENERATING COMPRESSION RESIDUAL GRID... [OK]
+        > SCANNING TEXT BOUNDING BOXES FOR DISCONTINUITY
+        > SUSPICIOUS HIGH-FREQUENCY REGIONS: 0 DETECTED
+    Metric Bar:
+      Left: FORENSICS: ELA METRICS
+      Right: PIXEL RESIDUALS
+
+  Slide 06 / 06:
+    Badge: MULTI-MODAL REASONING
+    Index: 06 / 06
+    Title: Biometric Matching & Gemma Reasoning
+    Subtitle: Face feature vectors combined with unified evidence arbitration
+    Description: Dedicated biometric models compare the document portrait with the presented selfie using cosine similarity, while Gemma synthesizes all findings into a reasoned risk score.
+    Specification Tags:
+      - FACIAL EMBEDDINGS
+      - COSINE SIMILARITY
+      - GEMMA ARBITER
+    Telemetry Terminal:
+      Title: ARBITER REASONING • SENSE 06
+      Status: RECONCILING
+      Lines:
+        > EXTRACTING BIOMETRIC EMBEDDINGS (512-D)... [OK]
+        > COSINE DISTANCE: 0.28 (THRESHOLD: 0.40) -> MATCH
+        > GEMMA SYNTHESIZING MULTI-MODAL EVIDENCE REPORT...
+    Metric Bar:
+      Left: ARBITER: MULTI-MODAL
+      Right: EXPLAINABLE VERDICT
+
+
+================================================================================
+6. EVIDENCE PIPELINE — STRUCTURED FORENSIC SEQUENCE
+================================================================================
+Badge: EVIDENTIARY SEQUENCE • MULTI-MODAL RECONCILIATION
+Heading:
+  Structured evidence pipeline.
+  From input qualification to explainable decision.
+Lead Paragraph:
+  Identity verification requires rigorous proof, not black-box assumptions.
+  VeriGate executes a structured sequence—qualifying input images, extracting
+  identity fields, validating MRZ check digits and calendar rules, inspecting
+  pixel errors, comparing facial embeddings, and synthesizing all findings into
+  an explainable intelligence report.
+
+Forensic Helix Stream Nodes:
+  - Node 01: 01 QUALIFICATION — Input Suitability
+  - Node 02: 02 OPTICAL OCR — Field Extraction
+  - Node 03: 03 MRZ AUDIT — Check Digit Verification
+  - Node 04: 04 RULE ENGINE — Deterministic Logic
+  - Node 05: 05 FORENSICS — Error Level Analysis
+  - Node 06: 06 BIOMETRICS — Face Match & AI Arbiter
+
+Helix Telemetry HUD Strip:
+  - SEQUENCE ARCHITECTURE: MULTI-STAGE EVIDENCE CHAIN
+  - VALIDATION LOGIC: DETERMINISTIC RULES
+  - ARBITRATION: GEMMA AI REASONING
+
+Quick-Pill Stage Navigation:
+  [01 Qualification] [02 OCR Extraction] [03 MRZ Validation] [04 Doc Rules] [05 ELA Forensics] [06 Face & AI Arbiter]
+
+Evidence Pipeline Stage Slides:
+  Stage 01:
+    Badge: STAGE 01 • PRE-FLIGHT INPUT QUALIFICATION
+    Index: PIPELINE 01 / 06
+    Title: Pre-Flight Input Qualification
+    Subtitle: Gemma visual inspection verifies document and selfie suitability
+    Description: Before running downstream extraction, Gemma inspects both uploaded images to confirm document visibility, detect image category, and ensure a clear, usable frontal portrait is present.
+    Specification Tags: DOCUMENT SUITABILITY, PORTRAIT SUITABILITY, FAIL-EARLY GATING
+    Terminal Title: QUALIFICATION AUDIT • STAGE 01
+    Terminal Lines:
+      > QUALIFYING DOCUMENT IMAGE... [SUITABLE]
+      > QUALIFYING PORTRAIT IMAGE... [SUITABLE]
+      > CLASSIFICATION: VALID IDENTITY CREDENTIAL
+    Metric: INPUT STATUS: QUALIFIED / PRE-FLIGHT GATEWAY
+
+  Stage 02:
+    Badge: STAGE 02 • OPTICAL OCR EXTRACTION
+    Index: PIPELINE 02 / 06
+    Title: OCR & Identity Field Extraction
+    Subtitle: Reading text fields from document surface
+    Description: Locates and extracts textual credential data: full name, document number, nationality, date of birth, and expiry date for subsequent deterministic rule validation.
+    Specification Tags: MULTI-FIELD OCR, TEXT NORMALIZATION, VALUE EXTRACTION
+    Terminal Title: OCR AUDIT • STAGE 02
+    Terminal Lines:
+      > LOCATING CREDENTIAL FIELDS... [OK]
+      > EXTRACTED: SURNAME, GIVEN NAMES, DOC_NUM, DOB
+      > NORMALIZING EXTRACTED VALUES... [COMPLETE]
+    Metric: EXTRACTION: STRUCTURED / DATA ENGINE
+
+  Stage 03:
+    Badge: STAGE 03 • MRZ VERIFICATION
+    Index: PIPELINE 03 / 06
+    Title: MRZ Check Digit Verification
+    Subtitle: Validating check digits when document format includes an MRZ
+    Description: When the document includes a machine-readable zone, VeriGate parses the lines and computes modular check digits on document number, DOB, and expiry.
+    Specification Tags: CONDITIONAL AUDIT, ICAO 9303 FORMAT, CHECKSUM PARITY
+    Terminal Title: MRZ AUDIT • STAGE 03
+    Terminal Lines:
+      > PARSING MACHINE-READABLE ZONE... [FOUND]
+      > VALIDATING LINE CHECKSUMS... [PASS]
+      > COMPOSITE PARITY CONFIRMED
+    Metric: MRZ STATUS: VERIFIED / CONDITIONAL VALIDATION
+
+  Stage 04:
+    Badge: STAGE 04 • DETERMINISTIC VALIDATION
+    Index: PIPELINE 04 / 06
+    Title: Deterministic Document Validation
+    Subtitle: Mathematical verification of dates, age, and validity
+    Description: Executes deterministic checks: verifies DOB is in the past, calculates applicant age, checks that issuance predates expiry, and flags expired credentials.
+    Specification Tags: CALENDAR AUDIT, AGE CALCULATION, EXPIRY CHECK
+    Terminal Title: STAGE 04 • DETERMINISTIC RULES
+    Terminal Lines:
+      > VERIFYING DOB IN PAST... [PASS]
+      > CALCULATING SUBJECT AGE: VALID
+      > CHECKING EXPIRY STATUS... [NOT EXPIRED]
+    Metric: RULES: DETERMINISTIC / MATHEMATICAL COHERENCE
+
+  Stage 05:
+    Badge: STAGE 05 • TAMPERING FORENSICS
+    Index: PIPELINE 05 / 06
+    Title: Tampering Forensics (ELA)
+    Subtitle: Error Level Analysis and compression discrepancy detection
+    Description: Re-compresses the document image at fixed quality to compute pixel-level error differences, highlighting localized splicing or altered text regions.
+    Specification Tags: ELA FORENSICS, COMPRESSION RESIDUALS, SPLICING DETECTION
+    Terminal Title: STAGE 05 • TAMPERING AUDIT
+    Terminal Lines:
+      > EXECUTING ERROR LEVEL ANALYSIS... [DONE]
+      > ANALYZING COMPRESSION ERROR RESIDUALS...
+      > SUSPICIOUS REGIONS: 0 DETECTED
+    Metric: FORENSICS: ELA METRICS / NO TAMPERING DETECTED
+
+  Stage 06:
+    Badge: STAGE 06 • BIOMETRICS & ARBITRATION
+    Index: PIPELINE 06 / 06
+    Title: Biometric Matching & Gemma AI Reasoning
+    Subtitle: Dedicated face verification reconciled by Gemma AI
+    Description: Dedicated biometric models compare document portrait with presented person using cosine distance, while Gemma synthesizes all findings into a final risk decision.
+    Specification Tags: FACE EMBEDDINGS, COSINE SIMILARITY, GEMMA ARBITER
+    Terminal Title: STAGE 06 • ARBITRATION
+    Terminal Lines:
+      > EXTRACTING BIOMETRIC EMBEDDINGS... [OK]
+      > COSINE DISTANCE EVALUATION: MATCH
+      > GEMMA GENERATING REASONED VERDICT... [DONE]
+    Metric: ARBITER: MULTI-MODAL / EVIDENCE-BASED VERDICT
+
+
+================================================================================
+7. LIVE SCREENING WORKSTATION
+================================================================================
+Section Tag: LIVE SCREENING WORKSTATION
+Section Title: Multimodal Identity Verification
+Section Subtitle:
+  Dual-channel evidence intake with rule validation, tampering forensics,
+  biometric comparison, and Gemma AI reasoning.
+
+Intake Console (Left Column):
+  Agent Header:
+    Name: VERIGATE SENTINEL DISPATCH
+    Status: ENCRYPTED CHANNEL • READY / SERVER CONNECTED
+  Chat System Prompt:
+    "Please inject primary credentials for forensic screening: upload the
+    Identity Document (passport or ID) and Presented Person photo below."
+  Upload Slots:
+    Slot 1:
+      Title: Identity Document
+      Subtitle: Passport, National ID or Driver's License
+      Button: Attach
+    Slot 2:
+      Title: Presented Person
+      Subtitle: Clear frontal portrait or live capture
+      Button: Attach
+  Demo Samples:
+    - [Valid Case] (Loads valid sample credentials)
+    - [Tampered Case] (Loads sample with tampered/mismatched credentials)
+  Intake Status Bar:
+    Count: 0 / 2 evidence files loaded (or 2 / 2 evidence files loaded)
+    Readiness: WAITING FOR FILES / READY FOR SCREENING
+  Control Buttons:
+    - [Primary]: Start Screening (Initiates sequential verification pipeline)
+    - [Secondary]: Stop / Reset (Resets console and intake files)
+
+Results Console (Right Column):
+  A. Standby State (Pre-Execution):
+     Title: Awaiting Evidence Injection
+     Description: Attach an identity document and facial portrait on the left console, then trigger Start Screening to activate multimodal verification.
+     Telemetry Chips:
+       - INPUT QUALIFICATION
+       - OCR & MRZ KERNEL
+       - ELA FORENSICS
+       - BIOMETRIC COMPARISON
+       - GEMMA ARBITER
+
+  B. Active Processing State (Live animated pipeline execution):
+     Header: ACTIVE PIPELINE EXECUTION
+     Progress: [0% to 100%]
+     Stages Monitored:
+       1. Input Qualification (Validating document & portrait suitability)
+       2. OCR & Field Extraction (Reading document identity credentials)
+       3. MRZ Validation (Evaluating machine-readable check digits)
+       4. Deterministic Validation (Checking DOB, calculated age, and expiry)
+       5. Tampering Forensics (Error Level Analysis & compression scan)
+       6. Face Verification (Comparing facial embeddings)
+       7. Gemma AI Reasoning (Synthesizing evidence into final decision)
+     Telemetry Console: Live real-time diagnostic terminal messages
+
+  C. Screening Results Experience (Dynamic Intelligence Report):
+     1. Final Decision Banner:
+        - Overall Decision: APPROVE / REVIEW / REJECT
+        - Risk Level: LOW / MEDIUM / HIGH / CRITICAL
+        - Risk Score: 0 to 100
+     2. One-Line AI Verdict:
+        - Summarizes primary reason behind the decision based on evidence
+     3. Identity Credential Details:
+        - FULL NAME: [Extracted applicant name]
+        - DOCUMENT NUMBER: [Extracted document number]
+        - NATIONALITY / ISSUER: [Issuing jurisdiction code]
+        - DATE OF BIRTH: [YYYY-MM-DD]
+        - SUBJECT AGE: [Calculated calendar age, e.g., 48 years]
+        - EXPIRY DATE: [YYYY-MM-DD]
+     4. Document Validation Status:
+        - Header: DOCUMENT VALIDATION STATUS
+        - Status: VALID / INVALID
+     5. Deterministic Validation Checks:
+        - Required Fields Check: PASSED / FAILED
+        - Date of Birth Past Check: PASSED / FAILED
+        - Expiry Status Check: PASSED / FAILED
+        - Issue Before Expiry Check: PASSED / FAILED
+        - MRZ Validation Check: PASSED / FAILED (or NOT APPLICABLE when absent)
+     6. Face Verification Card:
+        - Status: MATCH / MISMATCH / INCONCLUSIVE
+        - Cosine Distance: e.g., 0.28
+        - Acceptance Threshold: 0.40
+     7. Tampering Forensics (ELA) Card:
+        - Compression Variance Score: e.g., 0.02
+        - Flagged Tamper Regions: 0 DETECTED (or N regions flagged)
+        - Forensics Residual Heatmap: Visual display of pixel error levels
+     8. Date Intelligence & Chronology Card:
+        - Verification Date: Current Date (YYYY-MM-DD)
+        - Subject Age: Calculated calendar age (e.g., 48 years)
+        - Document Expiry Status: Valid (Active / Not Expired)
+        - Chronological Inconsistencies: None (Strict Temporal Coherence)
+     9. Reference & Issuance Record Check Card:
+        - Status: PASS / WARN / FAIL
+        - Details: Matching Status vs Reference Database
+    10. Detected Risk Factors Card:
+        - Displays itemized triggered risk factors (or "Zero risk anomalies detected: no tampering, facial discrepancy, or structural invalidity")
+    11. Session Metadata Card:
+        - Session ID, Gemma Arbiter Model (Local / Ephemeral), Screening Duration
+    12. Comprehensive AI Reasoning Report:
+        - Explains the synthesis of visual inspection, extracted fields, check digits, ELA tampering residuals, and biometric similarity into the final decision.
+    13. Workstation Action Button:
+        - [Run Another Screening]
+
+
+================================================================================
+8. SOFT, ELEGANT FOOTER & COMMUNITY TRUST
+================================================================================
+Brand Column:
+  Brand: VERIGATE
+  Tagline:
+    Smart, trustworthy identity verification. Protecting authentic people and
+    stopping synthetic fraud with intelligent real-time screening.
+  Status:
+    ● All Systems Active & Protected
+
+Navigation Links:
+  - Overview
+  - Threat Landscape
+  - VeriGate Sense
+  - Evidence Pipeline
+  - Live Screening
+
+Trust & Privacy Links:
+  - Zero Data Retention
+  - Biometric Protection
+  - Tampering Detection
+  - Open Source on GitHub
+  - License Note: Dual Licensed: Apache 2.0 & MIT
+
+Bottom Bar:
+  Copyright:
+    © 2026 VeriGate. Transparent, open-source identity verification intelligence.
+  Action:
+    Back to Top ↑
+================================================================================

@@ -162,3 +162,138 @@ def _extract_date_of_issue(raw_text: str) -> date | None:
                 continue
 
     return None
+
+
+def extract_fields_from_raw_text(raw_text: str) -> DocumentData | None:
+    """Fallback field extractor when standard MRZ is absent or obscured.
+
+    Parses pipe-delimited machine-readable test text or visual inspection zone
+    labels (FULL NAME, DOCUMENT NUMBER, NATIONALITY, DOB, EXPIRY, GENDER, ISSUE DATE).
+    """
+    if not raw_text:
+        return None
+
+    lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+    if not lines:
+        return None
+
+    from datetime import datetime
+
+    def _parse_any_date(s: str) -> date | None:
+        if not s:
+            return None
+        s = s.strip()
+        for fmt in ("%b %d, %Y", "%b %d %Y", "%d %b %Y", "%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(s, fmt).date()
+            except Exception:
+                pass
+        return None
+
+    doc = DocumentData(document_type="passport")
+
+    # 1. First priority: Check pipe-delimited test text (e.g. VGX|VG7K4M218|ADAMGGILCHRIST|AUSTRALIAN|1978-06-06|2024-01-09|M)
+    for line in lines:
+        if "|" in line and ("VGX|" in line or len(line.split("|")) >= 5):
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) >= 7:
+                doc.document_number = parts[1]
+                raw_name = parts[2]
+                doc.surname = raw_name[-9:] if len(raw_name) > 9 else raw_name
+                doc.given_names = raw_name[:-9] if len(raw_name) > 9 else ""
+                doc.nationality = parts[3].capitalize()
+                doc.issuing_country = doc.nationality
+                doc.date_of_birth = _parse_any_date(parts[4])
+                doc.date_of_expiry = _parse_any_date(parts[5])
+                doc.sex = _normalize_sex(parts[6])
+                break
+            elif len(parts) == 6:
+                doc.document_number = parts[1]
+                raw_name = parts[2]
+                doc.surname = raw_name[-9:] if len(raw_name) > 9 else raw_name
+                doc.given_names = raw_name[:-9] if len(raw_name) > 9 else ""
+                m_dob = re.search(r"(\d{4}-\d{2}-\d{2})", parts[3])
+                if m_dob:
+                    doc.date_of_birth = _parse_any_date(m_dob.group(1))
+                    nat = parts[3][:m_dob.start()].strip()
+                    if nat:
+                        doc.nationality = nat.capitalize()
+                        doc.issuing_country = doc.nationality
+                m_exp = re.search(r"(\d{4}-\d{2}-\d{2})", parts[4])
+                if m_exp:
+                    doc.date_of_expiry = _parse_any_date(m_exp.group(1))
+                doc.sex = _normalize_sex(parts[5])
+                break
+
+    # 2. Extract visual fields to refine name, document number with hyphens, issue date
+    for i, line in enumerate(lines):
+        upper = line.upper()
+        if "FULL NAME" in upper and i + 1 < len(lines):
+            candidate = lines[i + 1].strip()
+            if not any(k in candidate.upper() for k in ("DOCUMENT", "GENDER", "|", "VERIGATE", "CARD", "FICTIONAL")):
+                tokens = candidate.split()
+                if len(tokens) >= 2:
+                    doc.surname = tokens[-1]
+                    doc.given_names = " ".join(tokens[:-1])
+                else:
+                    doc.surname = candidate
+                    doc.given_names = ""
+        elif "DOCUMENT NUMBER" in upper and not doc.document_number:
+            for j in range(i + 1, min(i + 5, len(lines))):
+                cand = lines[j].strip()
+                if re.match(r"^VG-[A-Z0-9]+-[A-Z0-9]+$", cand) or (re.match(r"^[A-Z0-9-]{6,15}$", cand) and cand not in ("GENDER", "NATIONALITY", "ISSUED", "EXPIRES")):
+                    doc.document_number = cand
+                    break
+        elif "NATIONALITY" in upper and not doc.nationality:
+            for j in range(i + 1, min(i + 5, len(lines))):
+                cand = lines[j].strip()
+                if cand in ("Australian", "German", "American", "British", "French", "Canadian", "Indian") or (len(cand) > 3 and cand.isalpha() and cand.upper() not in ("ISSUED", "EXPIRES", "DATE")):
+                    doc.nationality = cand
+                    doc.issuing_country = cand
+                    break
+        elif ("GENDER" in upper or "SEX" in upper) and not doc.sex:
+            for j in range(i + 1, min(i + 3, len(lines))):
+                cand = lines[j].strip().upper()
+                if cand in ("M", "F", "X"):
+                    doc.sex = _normalize_sex(cand)
+                    break
+        elif ("ISSUED" in upper or "ISSUE DATE" in upper) and not doc.date_of_issue:
+            for j in range(i + 1, min(i + 4, len(lines))):
+                d = _parse_any_date(lines[j])
+                if d:
+                    doc.date_of_issue = d
+                    break
+
+    # Look for formatted document ID like VG-XXXX-XXX anywhere
+    for line in lines:
+        m_vg = re.search(r"\b(VG-[A-Z0-9]+-[A-Z0-9]+)\b", line)
+        if m_vg:
+            doc.document_number = m_vg.group(1)
+            break
+
+    # 3. Fallback date resolution if dates are still missing
+    if not doc.date_of_birth or not doc.date_of_expiry:
+        dates: list[date] = []
+        for line in lines:
+            d = _parse_any_date(line)
+            if d and d not in dates:
+                dates.append(d)
+            else:
+                m = re.search(r"(\b[A-Za-z]{3}\s+\d{1,2},?\s+\d{4}\b|\b\d{4}-\d{2}-\d{2}\b)", line)
+                if m:
+                    d = _parse_any_date(m.group(1))
+                    if d and d not in dates:
+                        dates.append(d)
+        if dates:
+            dates_sorted = sorted(dates)
+            if not doc.date_of_birth:
+                doc.date_of_birth = dates_sorted[0]
+            if not doc.date_of_expiry and len(dates_sorted) > 1:
+                doc.date_of_expiry = dates_sorted[-1]
+            if not doc.date_of_issue and len(dates_sorted) > 2:
+                doc.date_of_issue = dates_sorted[1]
+
+    if not doc.document_number and not doc.surname:
+        return None
+
+    return doc

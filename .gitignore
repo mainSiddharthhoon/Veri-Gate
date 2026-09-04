@@ -53,8 +53,18 @@ Thumbs.db
 docker-compose.override.yml
 
 # ========================
-# Build Output
+# Build Output & Binaries
 # ========================
 dist/
 build/
 *.log
+cloudflared.exe
+*.whl
+demo_data.zip
+
+# ========================
+# Runtime Evidence & Uploads
+# ========================
+uploads/
+backend/evidence/
+scratch/

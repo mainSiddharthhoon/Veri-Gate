@@ -1,0 +1,279 @@
+/* ==========================================================================
+   VeriGate — Design Tokens, Reset & Utilities
+   Ultra-premium forensic intelligence visual system
+   ========================================================================== */
+
+/* ── World-Class Typography (Outfit + Plus Jakarta Sans + JetBrains Mono) ── */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+:root {
+  /* ── Backgrounds & Canvas (Deep Obsidian Cinema Void) ── */
+  --void: #030408;
+  --surface: #080911;
+  --surface-elevated: #0f111e;
+  --surface-glass: rgba(8, 10, 18, 0.58);
+  --surface-glass-heavy: rgba(8, 10, 18, 0.82);
+
+  /* ── Borders & Glass Sheens ── */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-active: rgba(255, 255, 255, 0.16);
+  --glass-specular: rgba(255, 255, 255, 0.28);
+
+  /* ── High-Fidelity Text ── */
+  --ink: #f8fafc;
+  --ink-secondary: #94a3b8;
+  --ink-muted: #475569;
+  --ink-faint: #2d3748;
+
+  /* ── Laser Crimson (Primary Forensic Accent) ── */
+  --crimson: #ff3355;
+  --crimson-glow: #ff4d6d;
+  --crimson-bright: #ff6b85;
+  --crimson-deep: #400914;
+  --crimson-bg: rgba(255, 51, 85, 0.08);
+  --crimson-border: rgba(255, 51, 85, 0.28);
+  --crimson-shadow: rgba(255, 51, 85, 0.35);
+
+  /* ── Electric Optical Cyan (Biometric / Water Sensor Tone) ── */
+  --cyan: #00f2fe;
+  --cyan-glow: #38bdf8;
+  --cyan-bg: rgba(0, 242, 254, 0.08);
+  --cyan-border: rgba(0, 242, 254, 0.24);
+
+  /* ── Status Tones ── */
+  --verified: #10b981;
+  --verified-bg: rgba(16, 185, 129, 0.08);
+  --verified-border: rgba(16, 185, 129, 0.24);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.08);
+  --amber-border: rgba(245, 158, 11, 0.24);
+
+  /* ── Typography Roles ── */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* ── Spacing ── */
+  --section-pad: clamp(80px, 12vw, 160px);
+
+  /* ── Transitions & Elastic Physics ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fluid: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  /* ── Border Radii ── */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 9999px;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--void);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--void);
+  overflow-x: hidden;
+  line-height: 1.65;
+}
+
+::selection {
+  background: var(--crimson);
+  color: #ffffff;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  background: none;
+  color: inherit;
+  outline: none;
+}
+
+img, video {
+  display: block;
+  max-width: 100%;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* ── Utility Classes ── */
+.mono { font-family: var(--font-mono); }
+.display { font-family: var(--font-display); }
+
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border);
+}
+
+.glass-elevated {
+  background: rgba(15, 17, 30, 0.72);
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  border: 1px solid var(--border-active);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Background Atmospheric Canvas & Grid */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 50% 35%, black 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(circle at 50% 35%, black 40%, transparent 85%);
+}
+
+#particleCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Dynamic Liquid & Water Physics Keyframes ── */
+@keyframes waterFloat {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(0.15deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+}
+
+@keyframes waterWobble {
+  0%, 100% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+  }
+  33% {
+    border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+  }
+  66% {
+    border-radius: 35% 65% 30% 70% / 60% 40% 60% 40%;
+  }
+}
+
+@keyframes liquidBlobMorph {
+  0%, 100% {
+    border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  34% {
+    border-radius: 40% 60% 60% 40% / 45% 55% 45% 55%;
+    transform: translate(-50%, -50%) scale(1.08) rotate(120deg);
+  }
+  67% {
+    border-radius: 60% 40% 35% 65% / 50% 60% 40% 50%;
+    transform: translate(-50%, -50%) scale(0.96) rotate(240deg);
+  }
+}
+
+@keyframes auroraFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes waterSheenSweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes waterRippleExpand {
+  0% {
+    width: 0px;
+    height: 0px;
+    opacity: 0.7;
+  }
+  100% {
+    width: 320px;
+    height: 320px;
+    opacity: 0;
+  }
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes radarSweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

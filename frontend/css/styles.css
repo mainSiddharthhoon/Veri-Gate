@@ -1,0 +1,10 @@
+/* ==========================================================================
+   VeriGate Master Stylesheet
+   Aggregates modular CSS components
+   ========================================================================== */
+
+@import url("variables.css");
+@import url("layout.css");
+@import url("landing.css");
+@import url("screening.css");
+@import url("mobile.css");

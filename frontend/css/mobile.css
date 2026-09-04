@@ -1,0 +1,1488 @@
+/* ==========================================================================
+   VeriGate — Responsive Mobile Stylesheet
+   Pure @media overrides for flawless smartphone and tablet experience.
+   Leaves desktop/PC styling 100% untouched.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+  /* ── 1. GLOBAL MOBILE RESETS & FOUNDATIONS ── */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Ensure sections have scroll margin so fixed navbar never covers titles */
+  section,
+  .hero,
+  .problem-section,
+  .sense,
+  .pipeline-section,
+  .screening-section {
+    scroll-margin-top: 90px !important;
+  }
+
+  .wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ── 2. FLOATING LIQUID NAVBAR ── */
+  .navbar-wrap {
+    padding: 10px 14px !important;
+  }
+
+  .navbar {
+    padding: 7px 10px 7px 14px !important;
+    gap: 8px !important;
+    max-width: 100% !important;
+    animation: none !important; /* Stop vertical floating on touch to avoid jitter */
+    border-radius: 9999px !important;
+  }
+
+  .brand {
+    gap: 8px !important;
+  }
+
+  .brand-icon {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 7px !important;
+  }
+
+  .brand-name {
+    font-size: 13px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .nav-links {
+    display: none !important;
+  }
+
+  .btn-nav-glass {
+    padding: 7px 12px !important;
+    font-size: 11.5px !important;
+    gap: 5px !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .btn-nav-glass .icon {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* ── 3. HERO SECTION ── */
+  .hero {
+    min-height: auto !important;
+    padding-top: 90px !important;
+    padding-bottom: 40px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  /* Centered Character Background */
+  .hero-video-wrap {
+    opacity: 0.45 !important; /* Balances character visibility with crisp text readability */
+  }
+
+  .hero-video-wrap video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important; /* Strictly centers character in mobile viewport */
+  }
+
+  .hero-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(3, 4, 8, 0.65) 0%,
+      rgba(3, 4, 8, 0.45) 35%,
+      rgba(3, 4, 8, 0.88) 75%,
+      var(--void) 100%
+    ) !important;
+  }
+
+  .hero-content {
+    margin: 0 !important;
+    padding: 20px 16px 20px 16px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+  }
+
+  .hero-eyebrow {
+    font-size: 9.5px !important;
+    padding: 5px 12px !important;
+    letter-spacing: 0.1em !important;
+    margin-bottom: 16px !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  .hero h1 {
+    font-size: 2.15rem !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  /* Overrides desktop white-space: nowrap to eliminate horizontal overflow */
+  .hero h1 .line {
+    white-space: normal !important;
+    display: block !important;
+  }
+
+  .hero-description {
+    font-size: 14px !important;
+    line-height: 1.62 !important;
+    margin-top: 16px !important;
+    max-width: 100% !important;
+    color: #cbd5e1 !important;
+  }
+
+  .hero-ctas {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 10px !important;
+    margin-top: 22px !important;
+  }
+
+  .hero-ctas .btn-glass-primary,
+  .hero-ctas .btn-glass-secondary {
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 14px !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  .hero-showcase {
+    position: relative !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin: 16px 16px 24px 16px !important;
+    width: calc(100% - 32px) !important;
+    max-width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .glass-card-3d-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    perspective: none !important;
+  }
+
+  .glass-card-3d {
+    padding: 20px 18px !important;
+    transform: none !important; /* Disables 3D tilt jitter on touch devices */
+    border-radius: 18px !important;
+  }
+
+  .card-metric-value {
+    font-size: 28px !important;
+  }
+
+  .card-metric-title {
+    font-size: 15px !important;
+  }
+
+  .card-metric-desc {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    min-height: auto !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* ── 4. THREAT MARQUEE TICKER ── */
+  .threat-marquee-strip {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 10px 0 !important;
+    overflow: hidden !important;
+  }
+
+  .marquee-item {
+    font-size: 10.5px !important;
+    gap: 12px !important;
+    padding: 0 8px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  /* ── 5. THE PROBLEM SECTION ── */
+  .problem-section {
+    padding: 85px 0 60px !important;
+  }
+
+  .problem-badge {
+    font-size: 10px !important;
+    padding: 5px 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .problem-title {
+    font-size: 1.85rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .problem-lead {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin-top: 14px !important;
+  }
+
+  .problem-threats {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 26px !important;
+    perspective: none !important;
+  }
+
+  .threat-card {
+    padding: 18px 16px !important;
+    gap: 10px !important;
+    transform: none !important;
+    border-radius: 16px !important;
+  }
+
+  .threat-card .threat-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .threat-card h3 {
+    font-size: 15px !important;
+  }
+
+  .threat-card p {
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  /* ── 6. VERIGATE SENSE SECTION (Red Cinema Theme) ── */
+  .sense {
+    padding: 95px 0 60px !important; /* Top space prevents floating navbar overlap */
+    overflow: hidden !important;
+  }
+
+  .sense-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+    align-items: stretch !important;
+  }
+
+  .sense-left-col,
+  .sense-right-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .sense-badge {
+    font-size: 10px !important;
+    padding: 5px 12px !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    line-height: 1.4 !important;
+  }
+
+  .sense-heading {
+    font-size: 1.85rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.03em !important;
+    word-break: break-word !important;
+  }
+
+  .sense-lead {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 12px !important;
+    color: #cbd5e1 !important;
+  }
+
+  /* Holographic Radar Globe — Clean Centerpiece Graphic */
+  .sense-globe-stage {
+    margin: 8px 0 16px 0 !important;
+    padding: 6px 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+  }
+
+  .sense-globe-sphere {
+    width: 220px !important;
+    height: 220px !important;
+    max-width: 68vw !important;
+    max-height: 68vw !important;
+    margin: 10px auto 16px auto !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .globe-center-node {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .globe-center-node svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Completely hide colliding tags on mobile to keep radar centerpiece pure */
+  .globe-tag {
+    display: none !important;
+  }
+
+  /* Sleek 3-Column Glass Telemetry HUD */
+  .globe-telemetry-bar {
+    margin: 10px 0 18px 0 !important;
+    padding: 10px 8px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    background: rgba(14, 5, 8, 0.78) !important;
+    border: 1px solid rgba(255, 65, 105, 0.18) !important;
+    text-align: center !important;
+  }
+
+  .telemetry-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-width: 0 !important;
+  }
+
+  .telemetry-divider {
+    display: none !important;
+  }
+
+  .tel-label {
+    font-size: 7.5px !important;
+    letter-spacing: 0.06em !important;
+    color: #947f83 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .tel-value {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: #ff5c7a !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  /* Horizontally swipeable quick-pills on mobile with single-line labels */
+  .sense-feature-nav-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 6px 2px 14px 2px !important;
+    margin: 0 0 14px 0 !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none !important;
+    touch-action: pan-x !important;
+  }
+
+  .sense-feature-nav-pills::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .feat-pill {
+    flex: 0 0 auto !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    padding: 8px 16px !important;
+    height: 38px !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
+    border-radius: 9999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #cbd5e1 !important;
+    cursor: pointer !important;
+  }
+
+  .feat-pill.active {
+    background: rgba(255, 42, 84, 0.28) !important;
+    border-color: rgba(255, 75, 115, 0.75) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px rgba(255, 42, 84, 0.4) !important;
+  }
+
+  /* Sense Feature Card (Cards Under Globe) */
+  .sense-card-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    perspective: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .sense-feature-card {
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    background: rgba(14, 6, 10, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 14px !important;
+  }
+
+  .sense-card-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .sense-layer-badge {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    padding: 4px 8px !important;
+    letter-spacing: 0.06em !important;
+    border-radius: 6px !important;
+    background: rgba(255, 42, 84, 0.14) !important;
+    border: 1px solid rgba(255, 65, 105, 0.35) !important;
+    color: #ff5274 !important;
+    max-width: 60% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex-shrink: 1 !important;
+  }
+
+  .sense-layer-index {
+    font-size: 10.5px !important;
+    color: #94a3b8 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    text-align: right !important;
+  }
+
+  .sense-card-title-row {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .sense-card-icon {
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .sense-card-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sense-card-title-meta {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .sense-card-title {
+    font-size: 15.5px !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px 0 !important;
+    color: #ffffff !important;
+    word-break: break-word !important;
+  }
+
+  .sense-card-subtitle {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    color: #94a3b8 !important;
+    display: block !important;
+  }
+
+  .sense-card-desc {
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+  }
+
+  .sense-spec-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin: 2px 0 !important;
+    width: 100% !important;
+  }
+
+  .sense-spec-tags .spec-tag {
+    font-size: 8.5px !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .sense-terminal-box {
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    margin: 4px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .sense-terminal-box .term-line {
+    font-size: 9.5px !important;
+    word-break: break-word !important;
+  }
+
+  .sense-card-metric-bar {
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+    width: 100% !important;
+  }
+
+  .metric-bar-labels {
+    font-size: 9px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .sense-card-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-top: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .sense-card-dots {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .sense-dot {
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+  }
+
+  .sense-dot.active {
+    width: 18px !important;
+    border-radius: 9999px !important;
+  }
+
+  .sense-card-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .sense-nav-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+
+  /* ── 7. EVIDENCE PIPELINE SECTION ── */
+  .pipeline-section {
+    padding: 95px 0 60px !important; /* Top space prevents navbar overlap */
+    overflow: hidden !important;
+  }
+
+  .pipeline-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+    align-items: stretch !important;
+  }
+
+  .pipeline-left-col,
+  .pipeline-right-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .pipeline-badge {
+    font-size: 10px !important;
+    padding: 5px 12px !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    line-height: 1.4 !important;
+  }
+
+  .pipeline-heading {
+    font-size: 1.85rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.03em !important;
+    word-break: break-word !important;
+  }
+
+  .pipeline-lead {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 12px !important;
+    color: #cbd5e1 !important;
+  }
+
+  .pipeline-helix-stage {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 6-Step Stepper Box — Sleek, compact diagnostic sequence */
+  .helix-track-container {
+    padding: 10px 8px !important;
+    gap: 6px !important;
+    border-radius: 16px !important;
+    background: rgba(18, 6, 11, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .helix-backbone-line {
+    left: 22px !important;
+    top: 16px !important;
+    bottom: 16px !important;
+  }
+
+  .helix-node {
+    padding: 6px 10px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .helix-node.active {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--node-accent, #00f2fe) !important;
+    box-shadow: 0 0 14px -2px var(--node-glow, rgba(0, 242, 254, 0.35)) !important;
+  }
+
+  .node-indicator {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 9.5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .node-num {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .node-content {
+    display: flex !important;
+    flex-direction: row !important; /* Horizontal single line: [TAG] Title */
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .node-tag {
+    font-size: 8px !important;
+    letter-spacing: 0.05em !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--node-accent, #00f2fe) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .node-title {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 3-Column Pipeline Telemetry HUD */
+  .helix-telemetry-hud {
+    margin-top: 12px !important;
+    padding: 10px 8px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    border-radius: 12px !important;
+    background: rgba(14, 5, 8, 0.75) !important;
+    border: 1px solid rgba(255, 65, 105, 0.18) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  .helix-hud-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    align-items: center !important;
+    min-width: 0 !important;
+  }
+
+  .helix-hud-divider {
+    display: none !important;
+  }
+
+  .hud-label {
+    font-size: 7.5px !important;
+    letter-spacing: 0.06em !important;
+    color: #947f83 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .hud-value {
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    color: #00f2fe !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  /* Horizontally swipeable pipeline stage pills */
+  .pipeline-stage-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 6px 2px 14px 2px !important;
+    margin: 0 0 14px 0 !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none !important;
+    touch-action: pan-x !important;
+  }
+
+  .pipeline-stage-pills::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .stage-pill {
+    flex: 0 0 auto !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    padding: 8px 16px !important;
+    height: 38px !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
+    border-radius: 9999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #cbd5e1 !important;
+    cursor: pointer !important;
+  }
+
+  .stage-pill.active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: var(--pill-color, #00f2fe) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px var(--pill-color, rgba(0, 242, 254, 0.4)) !important;
+  }
+
+  .pipeline-card-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    perspective: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .pipeline-feature-card {
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    background: rgba(18, 6, 11, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 14px !important;
+  }
+
+  .pipeline-card-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .pipeline-stage-badge {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    padding: 4px 8px !important;
+    letter-spacing: 0.06em !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    max-width: 60% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex-shrink: 1 !important;
+  }
+
+  .pipeline-stage-index {
+    font-size: 10.5px !important;
+    color: #94a3b8 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    text-align: right !important;
+  }
+
+  .pipeline-card-title-row {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .pipeline-card-icon {
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .pipeline-card-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .pipeline-card-title-meta {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .pipeline-card-title {
+    font-size: 15.5px !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px 0 !important;
+    color: #ffffff !important;
+    word-break: break-word !important;
+  }
+
+  .pipeline-card-subtitle {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    color: #94a3b8 !important;
+    display: block !important;
+  }
+
+  .pipeline-card-desc {
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+  }
+
+  .pipeline-spec-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin: 2px 0 !important;
+    width: 100% !important;
+  }
+
+  .pipeline-spec-tags .pipeline-spec-tag {
+    font-size: 8.5px !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .stage-terminal-box {
+    margin: 4px 0 0 0 !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    background: rgba(8, 3, 6, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .terminal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 8px !important;
+    gap: 6px !important;
+  }
+
+  .terminal-title {
+    font-size: 9px !important;
+    letter-spacing: 0.06em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex: 1 !important;
+  }
+
+  .terminal-status {
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .terminal-body {
+    font-size: 9px !important;
+    line-height: 1.5 !important;
+    gap: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .term-line {
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  .pipeline-card-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-top: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pipeline-card-dots {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .pipeline-dot {
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+  }
+
+  .pipeline-dot.active {
+    width: 18px !important;
+    border-radius: 9999px !important;
+  }
+
+  .pipeline-card-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .pipeline-nav-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+
+  /* ── 8. LIVE SCREENING WORKSTATION ── */
+  .screening-section {
+    padding: 85px 0 70px !important;
+  }
+
+  .screening-inner {
+    padding: 0 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .screening-header {
+    margin-bottom: 24px !important;
+    text-align: center !important;
+  }
+
+  .screening-header .section-title {
+    font-size: 1.75rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .screening-header .section-subtitle {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    padding: 0 4px !important;
+  }
+
+  .screening-workstation {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .screening-intake-column,
+  .screening-results-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Intake Column */
+  .intake-card {
+    position: relative !important;
+    top: auto !important;
+    padding: 18px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .intake-header {
+    gap: 10px !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .intake-agent-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+  }
+
+  .intake-agent-avatar svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .intake-agent-name {
+    font-size: 11px !important;
+  }
+
+  .intake-agent-status {
+    font-size: 10px !important;
+  }
+
+  .chat-msg .chat-bubble {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .chat-bubble .bubble-tag {
+    font-size: 8.5px !important;
+  }
+
+  .chat-bubble .bubble-text {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  .evidence-slot {
+    padding: 12px 10px !important;
+    border-radius: 12px !important;
+    margin-top: 10px !important;
+  }
+
+  .slot-icon-box {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .slot-icon-box svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .slot-title {
+    font-size: 12.5px !important;
+  }
+
+  .slot-sub {
+    font-size: 10.5px !important;
+  }
+
+  .btn-slot-attach {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+
+  .quick-samples-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    margin-top: 12px !important;
+  }
+
+  .sample-label {
+    font-size: 9px !important;
+  }
+
+  .sample-chips {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  .sample-chip {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+
+  .intake-actions {
+    margin-top: 14px !important;
+    padding-top: 12px !important;
+  }
+
+  .intake-status-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .intake-count {
+    font-size: 10.5px !important;
+  }
+
+  .intake-readiness {
+    font-size: 9.5px !important;
+  }
+
+  .intake-buttons-group {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .btn-screening-start,
+  .btn-screening-stop {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px 16px !important;
+    font-size: 13.5px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Results Column */
+  .screening-results-column {
+    padding: 18px 12px !important;
+    border-radius: 16px !important;
+    min-height: 320px !important;
+  }
+
+  .telemetry-standby {
+    padding: 16px 8px !important;
+  }
+
+  .standby-radar-wrap {
+    width: 120px !important;
+    height: 120px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .standby-title {
+    font-size: 17px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .standby-desc {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .standby-telemetry-grid {
+    gap: 6px !important;
+  }
+
+  .telemetry-chip {
+    font-size: 9px !important;
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  /* ── 9. DYNAMIC RESULTS CARDS ON MOBILE ── */
+  .dynamic-results-container {
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .res-hero-card {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+    text-align: center !important;
+  }
+
+  .res-hero-left {
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .res-decision-pill {
+    font-size: 12px !important;
+    padding: 7px 18px !important;
+  }
+
+  .res-risk-gauge-box {
+    width: 90px !important;
+    height: 90px !important;
+  }
+
+  .res-gauge-score {
+    font-size: 22px !important;
+  }
+
+  .res-hero-right {
+    align-items: center !important;
+    text-align: center !important;
+    gap: 8px !important;
+  }
+
+  .res-risk-level-badge {
+    font-size: 11px !important;
+  }
+
+  .res-one-line-verdict {
+    font-size: 13.5px !important;
+    line-height: 1.45 !important;
+    border-left: none !important;
+    border-top: 2px solid rgba(255, 255, 255, 0.15) !important;
+    padding-top: 10px !important;
+    padding-left: 0 !important;
+    text-align: center !important;
+  }
+
+  .res-card {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .res-card-header {
+    margin-bottom: 12px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .res-card-title {
+    font-size: 12px !important;
+    gap: 8px !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Compact 2-column grid for extracted identity fields */
+  .res-id-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .res-id-item {
+    padding: 10px 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .res-id-label {
+    font-size: 9px !important;
+  }
+
+  .res-id-val {
+    font-size: 12.5px !important;
+    margin-top: 3px !important;
+    word-break: break-all !important;
+  }
+
+  .res-id-val.val-age {
+    font-size: 14px !important;
+  }
+
+  .res-check-row {
+    padding: 9px 10px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+
+  .res-risk-row {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    gap: 8px !important;
+  }
+
+  .res-btn-reset {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px 18px !important;
+    font-size: 13.5px !important;
+    border-radius: 12px !important;
+  }
+
+  /* ── 10. COMPREHENSIVE FOOTER ON MOBILE ── */
+  .footer-card {
+    padding: 24px 16px 18px !important;
+    border-radius: 16px !important;
+  }
+
+  .footer-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  .footer-brand-pane {
+    gap: 12px !important;
+  }
+
+  .footer-brand-title {
+    font-size: 17px !important;
+  }
+
+  .footer-tagline {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+  }
+
+  .footer-status-pill {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+  }
+
+  .footer-col-title {
+    font-size: 12px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .footer-links-list li {
+    margin-bottom: 8px !important;
+  }
+
+  .footer-links-list a {
+    font-size: 12.5px !important;
+  }
+
+  .footer-divider {
+    margin: 20px 0 16px !important;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .footer-copy {
+    font-size: 11.5px !important;
+  }
+
+  .footer-bottom-links a {
+    font-size: 11.5px !important;
+  }
+
+}
+
+/* ── EXTRA SMALL MOBILE DEVICES (Under 380px) ── */
+@media (max-width: 380px) {
+  .hero h1 {
+    font-size: 1.85rem !important;
+  }
+
+  .brand-name {
+    font-size: 11.5px !important;
+  }
+
+  .btn-nav-glass {
+    padding: 6px 9px !important;
+    font-size: 10px !important;
+  }
+
+  .res-id-grid {
+    grid-template-columns: 1fr !important; /* Stack single column on tiny screens */
+  }
+}

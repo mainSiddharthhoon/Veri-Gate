@@ -22,7 +22,11 @@ from app.services.preprocessing import (
 )
 from app.services.ocr import run_ocr, OcrRawResult, OcrBlock
 from app.services.mrz import detect_mrz_lines, parse_td3_mrz, MrzResult, MrzCheckResult
-from app.services.field_extraction import extract_passport_fields, DocumentData
+from app.services.field_extraction import (
+    extract_passport_fields,
+    extract_fields_from_raw_text,
+    DocumentData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +157,13 @@ def run_ocr_pipeline(
 
     if mrz_lines is None:
         result.mrz_detected = False
-        result.errors.append("MRZ lines not detected in OCR output")
-        logger.warning("MRZ not detected for session %s", session_id)
+        logger.warning("MRZ not detected for session %s, attempting fallback visual field extraction", session_id)
+        doc_data = extract_fields_from_raw_text(ocr_result.raw_text)
+        if doc_data:
+            result.document_fields = doc_data.to_db_dict(session_id)
+            logger.info("Successfully extracted visual/synthetic document fields for session %s: %s", session_id, result.document_fields)
+        else:
+            result.errors.append("MRZ lines and visual document fields not detected in OCR output")
     else:
         result.mrz_detected = True
         result.mrz_line_1 = mrz_lines[0]
