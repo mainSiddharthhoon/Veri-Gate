@@ -1,294 +1,577 @@
-# VeriGate: Technical Architecture & Developer Documentation
-**Internal Engineering & Jury Technical Reference**  
-*Document Version:* 2.0.0 | *Last Updated:* September 2026 | *Classification:* Engineering Technical Manual  
+# VeriGate — Identity Verification Intelligence
 
----
+VeriGate is a developer-oriented identity verification prototype that combines document processing, deterministic validation, image forensics, biometric face comparison, and multimodal AI reasoning into a single screening workflow.
 
-## Table of Contents
-1. [Executive Summary & System Mission](#1-executive-summary--system-mission)
-2. [End-to-End Multimodal System Architecture](#2-end-to-end-multimodal-system-architecture)
-3. [The 7-Stage Verification Pipeline: Engineering Deep-Dive](#3-the-7-stage-verification-pipeline-engineering-deep-dive)
-4. [The "Why Synthetic Data?" Rationale & Data Strategy](#4-the-why-synthetic-data-rationale--data-strategy)
-5. [How AI Improves & Transforms Document Screening](#5-how-ai-improves--transforms-document-screening)
-6. [Deployment Engineering: Cloud API Prototyping vs. Air-Gapped Enterprise Infrastructure](#6-deployment-engineering-cloud-api-prototyping-vs-air-gapped-enterprise-infrastructure)
-7. [API Specifications, Data Contracts & Supabase Schema](#7-api-specifications-data-contracts--supabase-schema)
-8. [Testing, Security Hardening & Accessibility Standards](#8-testing-security-hardening--accessibility-standards)
-9. [Known Physical Limitations & Future Roadmap](#9-known-physical-limitations--future-roadmap)
+> **Prototype status:** VeriGate is a hackathon/MVP system validated primarily with synthetic test fixtures. It is not a production border-security deployment and does not have access to real government watchlists, passport PKI/NFC chips, or physical document security inspection hardware.
 
----
+## 1. Problem
 
-## 1. Executive Summary & System Mission
+Identity screening can involve passports, national IDs, permits, visas, and other credentials. Manual inspection can be slow and inconsistent, while isolated OCR or face checks may fail to expose contradictions across different evidence sources.
 
-### 1.1 The Problem
-Border checkpoints, immigration counters, and financial KYC operations process tens of thousands of identity documents daily (passports, national IDs, visas, permits). Existing automated inspection tools suffer from three fundamental deficiencies:
-1. **Siloed Brittle Engines**: Optical Character Recognition (OCR), check-digit validation, and face comparison run as isolated components. A single minor optical glitch causes catastrophic false rejections, while sophisticated composite forgeries slip through.
-2. **Opaque Black-Box Rejections**: Most commercial screening tools output an unexplainable scalar score (e.g., `Risk: 74%`). Security officers and border agents are unable to determine *why* a traveler was flagged, leading to lengthy secondary inspections, racial/demographic bias, and regulatory non-compliance.
-3. **Sophisticated Digital Forgery**: High-fidelity generative image editing and digital splicing easily bypass basic visual inspections by human agents fatigued by high passenger volume.
+VeriGate addresses this with an evidence-first pipeline:
 
-### 1.2 The VeriGate Solution
-VeriGate is an **open-source, explainable multimodal identity verification engine**. It synthesizes:
-- **Optical Typography & OCR** (Tesseract & heuristic segmentation)
-- **Mathematical Check-Digit Validation** (ICAO 9303 Modulo 7-3-1 algorithms)
-- **Forensic Compression Analysis** (Error Level Analysis - ELA & localized noise variance)
-- **512-Dimensional Deep Biometrics** (Facenet512 & Cosine feature distance)
-- **Explainable Multimodal AI Arbitration** (Google Gemma 4 31B IT / Vision Models)
-
-Instead of relying on rigid thresholds, VeriGate reconciles all extracted evidence into an auditable **0–100 risk score**, a clear decision (**`APPROVE` / `REVIEW` / `REJECT`**), itemized weighted risk factors, and a natural-language forensic explanation.
-
----
-
-## 2. End-to-End Multimodal System Architecture
-
-```
-                                  [ INTAKE WORKSTATION ]
-                  ┌─────────────────────────────────────────────────────┐
-                  │ • Identity Document (Passport / National ID / Visa) │
-                  │ • Presented Individual Photo (File Upload / Camera) │
-                  └──────────────────────────┬──────────────────────────┘
-                                             │ HTTP POST /api/screen
-                                             ▼
-                                     [ FASTAPI BACKEND ]
-                                             │
-      ┌──────────────────────────────────────┼──────────────────────────────────────┐
-      │                                      │                                      │
-      ▼                                      ▼                                      ▼
-[ STAGE 1: QUALIFY ]               [ STAGE 2: OCR & MRZ ]                 [ STAGE 5: ELA ]
-Gemma Vision Input Gate            Tesseract Text Extraction              JPEG Resave (Q=90)
-• Document Framing                 • Surname / Given Names                • Pixel Delta Matrix
-• Portrait Presence                • Document ID / Nationality            • Splicing Heatmap
-• Fail-Early Check                 • ICAO 7-3-1 Check Digits              • Face Region Variance
-      │                                      │                                      │
-      └──────────────────────────────────────┼──────────────────────────────────────┘
-                                             │
-                                             ▼
-                               [ STAGE 6: BIOMETRICS ]
-                               Facenet512 Face Verification
-                               • Face Crop & Alignment
-                               • 512-D Embedding Extraction
-                               • Cosine Distance Metric
-                                             │
-                                             ▼
-                        [ STAGE 7: GEMMA AI ARBITRATION ]
-                        Multimodal Evidence Reconciliation
-                        • Correlates Visual + Math + Forensic Signals
-                        • Discards False Positives (Glare, Minor Scans)
-                        • Synthesizes Risk Score (0-100) & Decision
-                                             │
-                                             ▼
-                              [ PERSISTENCE & AUDIT LOG ]
-                        Supabase PostgreSQL (10 Relational Tables)
-                        • Audit Trail & Immutable Decision Records
-                        • Exportable JSON & Executive PDF Reports
+```text
+Document + Presented Person
+            |
+            v
+Input Qualification
+            |
+            v
+OCR / Field Extraction
+            |
+            v
+MRZ Validation (when applicable)
+            |
+            v
+Deterministic Document + Date Validation
+            |
+            v
+ELA / Tampering Evidence
+            |
+            v
+Face Verification
+            |
+            v
+Gemma Multimodal Reasoning
+            |
+            v
+Risk Score + Decision + Explanation
 ```
 
----
+# 2. Core Architecture
 
-## 3. The 7-Stage Verification Pipeline: Engineering Deep-Dive
+VeriGate uses a **7-stage sequential evidence pipeline**.
 
-### Stage 1: Pre-Flight Input Qualification (`qualify_inputs`)
-* **File:** `backend/app/services/ai_reasoning.py`
-* **Objective:** Fail early on degraded, unreadable, or fraudulent non-document submissions before committing expensive CPU/GPU cycles to OCR or facial inference.
-* **Mechanism:**
-  - Evaluates document image geometry, lighting, readability, and boundary visibility.
-  - Verifies presence of a valid, human frontal face in the presented selfie.
-  - Returns `inputs_qualified: bool`. If invalid, immediately rejects with descriptive feedback (e.g., `"Document image is severely blurred and cut off at top border"`).
+### Stage 1 — Input Qualification
 
-### Stage 2: Optical OCR & Structured Field Extraction (`ocr_pipeline`)
-* **Files:** `backend/app/services/ocr_pipeline.py`, `backend/app/services/field_extraction.py`
-* **Objective:** Extract raw glyphs and normalize them into structured identity fields.
-* **Mechanism:**
-  - Image preprocessing: Grayscale conversion, adaptive Otsu thresholding, noise reduction via morphological filtering.
-  - Tesseract OCR extraction with physical glyph coordinate tracking.
-  - Typographic heuristic regex segmentation parses Surname, Given Names, Document Number, Nationality, Date of Birth, and Expiration Date into a strongly-typed `DocumentFields` model.
+A multimodal vision model inspects both submitted images before expensive processing begins. It checks whether the document and presented-person image are suitable for the screening workflow and can reject irrelevant or unusable inputs early.
 
-### Stage 3: ICAO 9303 MRZ Check Digit Verification (`mrz.py`)
-* **File:** `backend/app/services/mrz.py`
-* **Objective:** Enforce international civil aviation standards on Machine Readable Travel Documents (MRTDs).
-* **Mechanism:**
-  - Parses ICAO 9303 TD3 (Passports: 2 lines × 44 chars) and TD1/TD2 (ID cards: 3 lines × 30 chars or 2 lines × 36 chars).
-  - Computes Modulo 10 checksums using fixed cyclic weights `[7, 3, 1]`:
-    $$\text{Checksum} = \left( \sum_{i=1}^{n} c_i \cdot w_{(i-1) \pmod 3} \right) \pmod{10}$$
-  - Verifies check digits for:
-    1. Document Number
-    2. Date of Birth (`YYMMDD`)
-    3. Expiration Date (`YYMMDD`)
-    4. Optional Personal Number
-    5. Composite Master Check Digit covering all fields.
-  - Documents lacking an MRZ (e.g., standard national ID cards) gracefully bypass this stage without failing.
+### Stage 2 — OCR and Field Extraction
 
-### Stage 4: Deterministic Document Validation (`validation.py`)
-* **File:** `backend/app/services/validation.py`
-* **Objective:** Pure mathematical and temporal logic with **zero hallucination risk**.
-* **Rules Evaluated:**
-  - **Temporal Integrity**: Date of birth must strictly precede current date.
-  - **Subject Age**: Accurately computes chronological age in years.
-  - **Expiry Status**: Expiration date must strictly succeed the screening timestamp.
-  - **Issuance Plausibility**: Document issue date must strictly precede expiration date.
-  - **Format Conformance**: Validates numbering syntax against country-specific rules.
+The document is processed to extract structured identity information such as:
 
-### Stage 5: Tampering Forensics & Error Level Analysis (`tampering_core.py`)
-* **File:** `backend/app/services/tampering_core.py`
-* **Objective:** Detect digital photo replacement, text modification, and clone-stamp manipulations.
-* **Mechanism:**
-  - Re-compresses the document image at a known, fixed JPEG quality level ($Q = 90$).
-  - Calculates the absolute difference between original and recompressed image matrices:
-    $$\Delta(x, y) = 15 \times |I_{\text{orig}}(x, y) - I_{\text{recomp}}(x, y)|$$
-  - Digital pastes, modified fonts, and replaced portrait boxes exhibit starkly divergent error levels compared to the original background.
-  - Generates a visual forensic ELA Heatmap artifact saved to `/evidence/` for human inspector review.
+- name
+- document number
+- nationality
+- issuing country/authority
+- date of birth
+- sex/gender
+- date of issue, when present
+- date of expiry, when present
 
-### Stage 6: Biometric Facial Correspondence (`face_core.py`)
-* **File:** `backend/app/services/face_core.py`
-* **Objective:** Biometrically verify that the document holder matches the live presented individual.
-* **Mechanism:**
-  - OpenCV/Haar/RetinaFace pipeline crops the face from the identity document and the live presented photo.
-  - Computes 512-dimensional facial embedding vectors using the **Facenet512** deep neural network.
-  - Evaluates similarity via **Cosine Distance**:
-    $$\text{Distance} = 1 - \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2}$$
-    - Distance $< 0.40 \implies$ High-confidence biometric match.
-    - Distance $\ge 0.40 \implies$ Biometric identity mismatch.
+The active project uses **PaddleOCR/PP-OCR** together with OpenCV, Pillow, and NumPy for image processing.
 
-### Stage 7: Gemma AI Multimodal Arbitration (`ai_reasoning.py`)
-* **File:** `backend/app/services/ai_reasoning.py`
-* **Objective:** Evidence synthesis, contradiction resolution, and natural-language risk reporting.
-* **Mechanism:**
-  - Evaluates the holistic forensic dossier: visual document photo, live selfie, ELA heatmap, extracted fields, MRZ verification status, deterministic validation results, tampering scores, and biometric distance.
-  - Resolves false alarms (e.g., OCR misreading `"O"` as `"0"`, but MRZ check digit and facial biometrics pass 100%).
-  - Produces structured JSON output (`AiAssessment`) with:
-    - Overall Risk Score ($0 - 100$)
-    - Categorical Decision: `APPROVE`, `REVIEW`, or `REJECT`
-    - Itemized, weighted Risk Factors
-    - Plain-language forensic reasoning narrative for security personnel.
+### Stage 3 — MRZ Validation
 
----
+For documents containing a Machine Readable Zone, VeriGate parses the MRZ and recalculates its check digits. The stage is conditional: documents without an MRZ skip MRZ-specific checks rather than automatically failing.
 
-## 4. The "Why Synthetic Data?" Rationale & Data Strategy
+### Stage 4 — Deterministic Document and Temporal Validation
 
-During development, testing, and automated unit testing, VeriGate exclusively utilizes **programmatically generated synthetic identity documents** (e.g., `synthetic_passport.jpg`, `synthetic_passport_tampered.jpg`). This deliberate engineering choice addresses three critical challenges:
+This stage is rule-based. Python calculates objective evidence including:
 
-### 4.1 Strict Privacy Laws & Regulatory Compliance (GDPR, CCPA, BIPA)
-- Real identity documents contain highly sensitive Personally Identifiable Information (PII), including full names, birth dates, national registry IDs, and biometric face portraits.
-- Committing authentic government credentials to source code repositories, training corpora, or cloud testing environments violates **GDPR (Articles 9 & 83)**, the **Biometric Information Privacy Act (BIPA)**, and international privacy standards.
-- Violations carry severe criminal and financial penalties (up to €20M or 4% of global annual turnover).
+- current date
+- date-of-birth validity
+- calculated age
+- future DOB detection
+- issue date
+- expiry date
+- expired/not-expired status
+- days until/since expiry
+- issue/expiry relationship
+- issue date in the future
 
-### 4.2 Controlled Ground-Truth & Counterfactual Benchmarking
-- In real-world counterfeit documents seized at borders, the **exact ground-truth tampering delta** is often uncertain: exactly which pixels were modified, what font was cloned, or what compression artifacts were introduced by the counterfeiter.
-- Synthetic generation provides **mathematically known ground-truth**:
-  - We create an unaltered baseline document (`synthetic_passport.jpg`).
-  - We create an exact counterfactual copy (`synthetic_passport_tampered.jpg`) with surgically controlled modifications: changing a birth year from `1985` to `1995`, modifying an expiry check digit, or replacing the face box.
-  - This allows us to quantify the **exact sensitivity, precision, and recall** of our ELA algorithm and MRZ validator.
+The central rule is:
 
-### 4.3 Adversarial Edge-Case Simulation
-- Authentic identity datasets rarely contain the exotic, adversarial edge cases necessary to test screening robustness:
-  - Leap-day birthdays (`Feb 29`) on non-leap years.
-  - Expired visas pasted inside valid passport booklets.
-  - Single-character check-digit transpositions.
-  - Spliced facial portraits with subtle boundary blur.
-- Synthetic generation allows our engineering team to simulate thousands of diverse adversarial permutations on demand without ethical or legal compromises.
+> **Python calculates deterministic date facts; Gemma interprets them but must not override them.**
 
----
+Missing issue or expiry dates are represented as unavailable/null and are not automatically treated as invalid unless the document type requires the field.
 
-## 5. How AI Improves & Transforms Document Screening
+### Stage 5 — Tampering Forensics
 
-### 5.1 Moving Beyond Brittle Rules and Unexplainable Black Boxes
-Traditional verification architectures fall into two extremes:
-1. **Rigid Rule Engines**: Brittle and unforgiving. A slight glare over a barcode, an unparsed middle name, or a camera reflection causes automatic rejection of legitimate travelers, creating massive airport bottlenecks.
-2. **Opaque Deep Learning Black Boxes**: Outputs a non-interpretable probability (e.g., `Fraud: 0.82`). Border security officers cannot legally detain a traveler based on an unexplainable number without actionable evidence.
+VeriGate performs image-based forensic analysis using **Error Level Analysis (ELA)**. The document is recompressed, the original/recompressed images are compared, pixel residuals and variance are calculated, and a heatmap evidence artifact is produced.
 
-### 5.2 The Explainable AI (XAI) Arbiter Pattern
-VeriGate implements a **two-tier hybrid architecture**:
-1. **Tier 1 (Deterministic & Forensic Feature Extraction)**: Math, algorithms, and deep metrics compute objective signals (MRZ checksum validity, ELA variance ratios, Facenet cosine distance).
-2. **Tier 2 (Gemma AI Multimodal Arbitration)**: A multimodal vision-language model acts as the "court magistrate". It correlates the objective findings with visual context:
-   - *Example 1 (Innocent Glare)*: OCR read `"SM1TH"` instead of `"SMITH"`, but MRZ Modulo-10 checksum is valid and Facenet distance is $0.14$. Gemma rules: **`APPROVE`** — optical character error attributed to document laminate glare, identity confirmed.
-   - *Example 2 (Stealth Forgery)*: All OCR fields and typography look plausible, but ELA heatmap exhibits high-frequency localized noise variance over the expiration year. Gemma rules: **`REJECT`** — localized digital splicing detected over expiration date.
+ELA is treated as supporting forensic evidence, not as a standalone authenticity proof.
 
-### 5.3 Continuous Learning & Active Feedback
-In future iterations, human border officer overrides (approving or confirming fraud on flagged cases) feed into an active learning feedback loop, fine-tuning local detection heads without storing raw biometric images.
+### Stage 6 — Biometric Face Verification
 
----
+The document portrait is compared with the presented person's image using **DeepFace / Facenet512** facial embeddings and cosine-distance comparison. The result is returned as match, mismatch, or inconclusive evidence.
 
-## 6. Deployment Engineering: Cloud API Prototyping vs. Air-Gapped Enterprise Infrastructure
+If biometric evidence is unavailable or the biometric stage fails, the reasoning layer is instructed not to invent a match.
 
-A major design strength of VeriGate is its **infrastructure-agnostic provider abstraction layer**.
+### Stage 7 — Gemma AI Arbitration
 
-```
-                  ┌───────────────────────────────────────────────────┐
-                  │          VeriGate Provider Abstraction            │
-                  └─────────┬───────────────────────────────┬─────────┘
-                            │                               │
-             ┌──────────────┴──────────────┐ ┌──────────────┴──────────────┐
-             │    Development / Hackathon  │ │    Enterprise / Sovereign   │
-             │       Cloud Architecture    │ │    Air-Gapped Infrastructure│
-             ├─────────────────────────────┤ ├─────────────────────────────┤
-             │ • Google AI Studio REST     │ │ • Local GPU Rig (vLLM)      │
-             │ • OpenRouter Fallback       │ │ • Quantized Gemma-27B/9B    │
-             │ • Supabase Cloud DB         │ │ • Local PostgreSQL + RLS    │
-             │ • Cloudflare Dev Tunnels    │ │ • Isolated Air-Gapped LAN   │
-             │ • Zero GPU Cloud Overhead   │ │ • Zero Outbound Telemetry   │
-             └─────────────────────────────┘ └─────────────────────────────┘
+Gemma receives the available evidence from the preceding stages, including images, OCR/MRZ results, deterministic date/age evidence, tampering evidence, and biometric evidence. It produces a structured assessment containing validity, consistency, biometric status, tampering concern, risk score, risk level, decision, explanation, and risk factors.
+
+Normal decisions are:
+
+```text
+APPROVE
+REVIEW
+REJECT
 ```
 
-### 6.1 Our Development Setup (Cloud API Providers)
-For development, fast prototyping, and hackathon demonstration, VeriGate utilized:
-- **Google AI Studio REST API** (`gemma-4-31b-it` / Gemini): Rapid testing, state-of-the-art vision capabilities, zero local GPU requirements.
-- **OpenRouter Multimodal Fallback**: Redundant cloud backup if primary rate limits are reached.
-- **Cloudflare Quick Tunnels**: Zero-config HTTPS tunneling for real-time mobile phone camera testing (`https://...trycloudflare.com`).
-- **Supabase Cloud (PostgreSQL)**: Instant cloud database with RESTful JSON querying and live dashboard.
+# 3. Evidence Philosophy
 
-### 6.2 Enterprise & Border Checkpoint Deployment (Air-Gapped On-Premises)
-In production deployment at national borders, customs, or defense facilities, regulations forbid streaming passenger documents across public cloud networks. VeriGate is architected for **turnkey on-premises execution**:
-- **Air-Gapped Inference Server**: Local high-density GPU server (e.g., dual NVIDIA RTX 4090s or single A100/H100) running **vLLM** or **Ollama** with quantized `gemma-2-27b-it` or `qwen2.5-vl-7b-instruct`.
-- **Local Biometrics & OCR**: Tesseract and DeepFace execute locally with sub-second CPU/CUDA inference.
-- **Self-Hosted PostgreSQL**: On-premises PostgreSQL database with Row-Level Security (RLS) and encrypted audit tables.
-- **Data Sovereignty Guarantee**: 100% of document buffers, ELA heatmaps, and facial feature vectors remain strictly within the physical checkpoint perimeter. Latency drops from ~2.5s (cloud roundtrip) to **< 600ms total pipeline execution**.
+The architectural principle is:
 
----
+> **Specialized systems produce evidence. AI interprets the combined evidence.**
 
-## 7. API Specifications, Data Contracts & Supabase Schema
+For example:
 
-### 7.1 Core API Endpoints
-* **`POST /api/screen`**: Primary screening intake endpoint.
-  - *Request*: `multipart/form-data` with `document` (image file) and `presented_person` (image file).
-  - *Response*: Structured JSON containing session ID, extracted fields, validation results, tampering scores, face match metrics, and Gemma AI reasoning verdict.
-* **`GET /api/health`**: Real-time service health check. Verifies API availability and database connectivity.
-* **`GET /evidence/{filename}`**: Serves generated ELA forensic heatmap images.
-* **`POST /api/sessions`**: Creates and tracks long-term screening sessions.
+```text
+OCR
+  -> DOB = 1985-03-15
 
-### 7.2 Database Schema (Supabase PostgreSQL)
-VeriGate defines **10 relational tables** in `supabase/migrations/001_initial_schema.sql`:
-1. `screening_sessions`: Primary screening entity; tracks session lifecycle (`pending`, `processing`, `completed`, `failed`).
-2. `documents`: Structured extracted identity data (names, doc number, nationality, DOB, expiry, raw & parsed MRZ lines).
-3. `ocr_results`: Raw OCR glyph output, bounding boxes, and engine confidence scores.
-4. `validation_results`: Overall validation pass/fail summary and check counts.
-5. `validation_checks`: Granular individual checks (`expiry_date_valid`, `mrz_checksum`, `age_consistency`).
-6. `tampering_analyses`: Overall ELA score, suspicious flag, and metadata.
-7. `tampering_signals`: Individual tamper signals (`photo_region`, `noise_analysis`) linked to heatmap artifacts.
-8. `face_verifications`: Facial comparison metrics (model, distance, threshold, match flag).
-9. `risk_assessments`: Final AI Arbiter score ($0 - 100$), decision (`APPROVE`/`REVIEW`/`REJECT`), and reasoning summary.
-10. `risk_factors`: Individual weighted risk contributions.
+Python validation
+  -> Age = 41
 
----
+MRZ
+  -> checksum = valid
 
-## 8. Testing, Security Hardening & Accessibility Standards
+Face verification
+  -> distance = 0.217
 
-### 8.1 Automated Test Suites
-- **Pytest**: 78 unit and integration tests executing in $< 0.5$ seconds (`test_mrz.py`, `test_validation.py`, `test_field_extraction.py`).
-- **Database E2E Verification**: `scripts/test_db_full.py` tests end-to-end Supabase CRUD, schema validation, foreign key cascading, and cleanup.
+ELA
+  -> no significant anomaly
 
-### 8.2 Frontend Security & Dev Guard
-- **`dev-guard.js`**: Intercepts VS Code Live Server WebSocket reload signals during document processing to prevent mid-screening UI reloads.
-- **Debounced Execution**: `isScreeningInFlight` and `isLoadingSample` guards prevent double-click API floods.
+Gemma
+  -> cross-evidence interpretation
+  -> decision + explanation
+```
 
-### 8.3 Accessibility (Lighthouse Audit Compliance)
-- **Landmark Architecture**: Standard semantic `<header>`, `<main id="main-content">`, and `<footer>` landmarks.
-- **Strict Heading Hierarchy**: Verified sequential descending order ($h1 \to h2 \to h3$) with **0 skipped levels**.
+This reduces the amount of deterministic work delegated to the language model and makes the system easier to debug and explain.
 
----
+# 4. AI Provider Architecture
 
-## 9. Known Physical Limitations & Future Roadmap
+The AI layer is provider-configurable. The normal preference is:
 
-1. **Physical Material Security**: Standard 2D camera images cannot inspect ultraviolet (UV) fluorescent ink, optically variable ink (OVI), infrared (IR) luminescence, or tactile intaglio print.
-2. **NFC / ePassport PKI**: Does not currently interface with physical RFID/NFC passport chips; future enterprise modules will incorporate ICAO 9303 PKI chip readers.
-3. **3D Liveness Detection**: Currently compares 2D biometric embeddings; integration with passive 3D depth-map liveness is scheduled for Phase 3.
+```text
+Google AI Studio — Gemma 4 31B
+            |
+            v
+Ollama Vision fallback
+            |
+            v
+OpenRouter fallback
+```
 
----
-*© 2026 VeriGate Core Engineering Team. Dual-licensed under Apache 2.0 and MIT.*
+The provider is selected through configuration rather than hardcoded into the rest of the pipeline. This also makes a future migration to a strong local/on-prem multimodal model possible without rebuilding the upstream verification stages.
+
+# 5. Database and Evidence Model
+
+A screening run is represented by a central screening session with linked evidence records:
+
+```text
+screening_session
+      |
+      +-- document
+      +-- OCR result
+      +-- validation result
+      |      +-- validation checks
+      +-- tampering analysis
+      |      +-- tampering signals
+      +-- face verification
+      +-- risk assessment
+             +-- risk factors
+```
+
+The database/reference layer can support known-good reference records and future watchlist integrations.
+
+### Reference / Watchlist Scope
+
+Real blacklist/watchlist detection requires authoritative external datasets and appropriate production query/access controls. The hackathon prototype uses synthetic/reference records and does not claim access to real border-security watchlists.
+
+Likewise, detecting repeated identities across a population requires historical biometric/identity data and cross-session matching infrastructure; that is a future extension rather than a demonstrated production capability.
+
+# 6. API Flow
+
+The current frontend screening flow uses the following backend endpoints:
+
+```text
+POST /api/ocr/extract
+        |
+        v
+Input qualification + OCR/session creation
+        |
+        v
+POST /api/face/verify
+        |
+        v
+Face verification
+        |
+        v
+POST /api/risk/assess/{session_id}
+        |
+        v
+Gemma evidence arbitration
+        |
+        v
+GET /api/screening/{session_id}
+        |
+        v
+Final screening report
+```
+
+ELA evidence artifacts are served from the backend evidence path.
+
+# 7. Frontend Architecture
+
+The frontend is a single-page application using HTML5, CSS3, modern JavaScript, GSAP, ScrollTrigger, and the browser MediaDevices API.
+
+```text
+frontend/
+├── index.html
+├── assets/
+│   ├── samples/
+│   └── videos/
+├── css/
+│   ├── variables.css
+│   ├── layout.css
+│   ├── landing.css
+│   ├── screening.css
+│   └── styles.css
+└── js/
+    ├── dev-guard.js
+    ├── config.js
+    ├── api.js
+    ├── animations.js
+    ├── screening.js
+    └── app.js
+```
+
+The landing page, screening workstation, processing state, and results experience are presented as one continuous product experience.
+
+# 8. Screening UI
+
+The frontend supports:
+
+- document upload
+- presented-person image upload
+- drag-and-drop input
+- optional camera capture
+- synthetic/demo sample cases
+- processing visualization
+- final risk report
+- ELA/original comparison
+- JSON audit export
+
+The frontend is responsible for presentation and interaction; screening decisions continue to originate from the backend evidence pipeline.
+
+# 9. Results
+
+A completed screening can expose:
+
+- final decision
+- risk score
+- risk level
+- identity fields
+- calculated age
+- document validation state
+- MRZ state when applicable
+- face match state and distance
+- tampering/ELA evidence
+- temporal validation
+- risk factors
+- AI explanation
+- session/audit metadata
+
+The aim is to expose the evidence behind the decision rather than only a binary pass/fail result.
+
+# 10. Technology Stack
+
+## Backend
+
+- Python 3.11+
+- FastAPI
+- Uvicorn
+- Pydantic v2
+- HTTPX
+- OpenCV
+- Pillow
+- NumPy
+- PaddleOCR / PP-OCR
+- DeepFace
+- Facenet512
+- Supabase/PostgreSQL where configured
+
+## AI
+
+- Google AI Studio — Gemma 4 31B (`gemma-4-31b-it`)
+- Ollama Vision fallback
+- OpenRouter fallback
+
+## Frontend
+
+- HTML5
+- CSS3
+- JavaScript
+- GSAP
+- ScrollTrigger
+- MediaDevices / `getUserMedia`
+
+# 11. Installation
+
+## Prerequisites
+
+Install Python 3.11+, Git, the project dependencies, and at least one configured AI provider.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/mainSiddharthhoon/Veri-Gate.git
+cd Veri-Gate
+```
+
+Create and activate a virtual environment:
+
+### Windows PowerShell
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### Linux / macOS
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Install Python dependencies:
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+If the active OCR installation requires an external OCR runtime, install the required runtime for the chosen environment.
+
+# 12. Environment Configuration
+
+Create `.env` in the project root and provide the values appropriate for the selected deployment.
+
+Example structure:
+
+```env
+APP_NAME=VeriGate
+APP_VERSION=0.1.0
+DEBUG=false
+HOST=127.0.0.1
+PORT=8000
+
+SUPABASE_URL=your-supabase-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+GEMINI_API_KEY=your-google-ai-studio-key
+
+VISION_BASE_URL=http://127.0.0.1:11434
+VISION_MODEL=qwen2.5-vl-7b-local
+VISION_API_KEY=
+
+OPENROUTER_API_KEY=your-openrouter-key
+OPENROUTER_MODEL=openrouter/free
+```
+
+Never commit real API keys or other secrets.
+
+# 13. Running VeriGate
+
+From the project root:
+
+```bash
+python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+Open the web application at:
+
+```text
+http://127.0.0.1:8000/frontend/
+```
+
+Useful endpoints:
+
+```text
+http://127.0.0.1:8000/docs
+http://127.0.0.1:8000/api/health
+```
+
+# 14. Testing
+
+Run the backend test suite with:
+
+```bash
+pytest backend/tests -v
+```
+
+Important test areas include:
+
+```bash
+pytest backend/tests/test_mrz.py -v
+pytest backend/tests/test_validation.py -v
+pytest backend/tests/test_field_extraction.py -v
+pytest backend/tests/test_tampering.py -v
+pytest backend/tests/test_face.py -v
+pytest backend/tests/test_risk.py -v
+```
+
+The project was also validated with controlled synthetic end-to-end cases covering valid identities, biometric mismatches, invalid inputs, temporal inconsistencies, future DOBs, and multiple-error documents.
+
+# 15. Synthetic Testing Data
+
+The repository uses synthetic fixtures for development and demonstration. Examples include:
+
+```text
+valid/
+    matching identity cases
+
+invalid/
+    invalid input
+    expired documents
+    future DOB
+    temporal contradictions
+    biometric mismatches
+    multiple-error documents
+```
+
+Documents branded **VERIGATE / SYNTHETIC IDENTITY LAB** are authorized synthetic fixtures for this application's testing workflow.
+
+No real government identity documents or real personal identity datasets are intended to be distributed with the prototype.
+
+# 16. Security and Privacy Considerations
+
+The prototype is designed so the AI reasoning layer can eventually be moved entirely to private infrastructure.
+
+A production deployment should additionally implement:
+
+- authenticated operators
+- role-based access control
+- encrypted transport
+- encrypted storage
+- secrets management
+- retention/deletion policies
+- controlled access to biometric evidence
+- dataset governance
+- production monitoring and audit controls
+
+# 17. Known Limitations
+
+### Physical security features
+
+A normal image pipeline cannot reliably inspect tactile engraving, UV-only features, IR-only features, physical holograms, optically variable inks, or other features requiring specialized inspection hardware.
+
+### NFC / ePassport cryptography
+
+The prototype does not read or cryptographically verify passport NFC chips, ePassport PKI signatures, or chip-side biometric data.
+
+### Lighting and occlusion
+
+Glare, shadows, blur, poor face crops, masks, sunglasses, and other image-quality problems can make biometric or forensic stages inconclusive.
+
+### Document coverage
+
+MRZ validation is conditional on an MRZ being present and parsable. Documents without an MRZ use OCR and deterministic validation instead.
+
+### Dataset-dependent intelligence
+
+Real blacklist/watchlist detection and cross-session multiple-identity detection require authoritative datasets and additional matching infrastructure.
+
+### AI latency
+
+Cloud AI latency depends on network/provider conditions. Local multimodal model latency depends heavily on available CPU, GPU, RAM, and model configuration.
+
+### Prototype evaluation
+
+Current demonstrations use controlled synthetic fixtures. These tests should not be presented as production accuracy benchmarks.
+
+# 18. Future Extensions
+
+Possible next steps include:
+
+- authoritative watchlist/blacklist integration
+- cross-session identity correlation
+- broader document-type support
+- specialized visa/stamp validation
+- stronger document-security inspection
+- NFC/ePassport verification
+- stronger local/on-prem multimodal reasoning
+- production authentication and RBAC
+- labeled-dataset benchmarking
+- large-scale monitoring and analytics
+
+# 19. Design Rationale
+
+The system deliberately avoids asking the LLM to perform every verification task.
+
+```text
+Deterministic code
+    -> mathematical/date facts
+
+OCR / MRZ engines
+    -> document evidence
+
+Specialized vision/forensics
+    -> biometric and image evidence
+
+Gemma
+    -> cross-evidence reasoning
+    -> risk + decision + explanation
+```
+
+This separation makes the pipeline easier to reason about, test, debug, and upgrade.
+
+A future local/on-prem multimodal model can replace the current AI provider while preserving the upstream verification architecture.
+
+# 20. Current Prototype Scope
+
+## Implemented
+
+- multimodal input qualification
+- OCR and structured field extraction
+- conditional MRZ validation
+- deterministic document validation
+- deterministic date/age validation
+- ELA-based tampering evidence
+- biometric face verification
+- multimodal AI evidence arbitration
+- risk scoring
+- approve/review/reject decisions
+- explainable screening report
+- camera capture
+- ELA/original comparison
+- JSON audit export
+- modular single-page frontend
+- synthetic end-to-end testing fixtures
+
+## Not claimed by this prototype
+
+- real government watchlist access
+- production border deployment
+- NFC/ePassport chip verification
+- physical security-feature inspection
+- universal document recognition
+- guaranteed production accuracy
+- guaranteed fixed latency
+- regulatory certification
+
+# 21. Summary
+
+VeriGate is an **evidence-first identity screening system**:
+
+```text
+Input
+  -> Qualification
+  -> OCR
+  -> MRZ (when applicable)
+  -> Deterministic Validation
+  -> ELA Forensics
+  -> Face Verification
+  -> Gemma Reasoning
+  -> Risk + Decision + Explanation
+```
+
+The architecture is modular so individual verification components and the AI reasoning provider can be improved or replaced without rebuilding the entire application.
+
+# 22. License
+
+See the repository `LICENSE` file for the applicable license terms.
