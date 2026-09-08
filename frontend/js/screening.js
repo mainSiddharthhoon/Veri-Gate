@@ -1156,7 +1156,10 @@ function generatePdfReport(r, payload) {
         checkPageBreak(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(185, 28, 28);
-        const fText = doc.splitTextToSize(`• ${f.description || f.rule || 'Elevated anomaly'} (Impact: +${f.score_impact || 0})`, contentWidth);
+        const factorText = f.message || f.description || f.rule || f.factor_name || (typeof f === 'string' ? f : 'Elevated risk anomaly');
+        const factorImpact = f.score_contribution != null ? f.score_contribution : (f.score_impact != null ? f.score_impact : (f.weight || 0));
+        const impactStr = factorImpact > 0 ? ` (Impact: +${factorImpact})` : '';
+        const fText = doc.splitTextToSize(`• ${factorText}${impactStr}`, contentWidth);
         doc.text(fText, margin, y);
         y += (fText.length * 3.8);
       });
@@ -1258,9 +1261,12 @@ function printAuditReport(r, payload) {
   <div><strong>Tampering Status:</strong> ${payload.tamperingEvidence?.suspicious ? 'SUSPICIOUS ARTIFACTS' : 'PRISTINE / VERIFIED'} (Score: ${payload.tamperingEvidence?.score ?? '0.00'})</div>
 
   <div class="section-title">5. RISK FACTORS</div>
-  ${(payload.riskFactors || []).length > 0 ? (payload.riskFactors || []).map(f => `
-    <div style="color:#b91c1c;">&bull; ${escapeHtml(f.description || f.rule || 'Elevated risk anomaly')} (+${f.score_impact || 0})</div>
-  `).join('') : '<div>Zero anomalous risk factors identified.</div>'}
+  ${(payload.riskFactors || []).length > 0 ? (payload.riskFactors || []).map(f => {
+    const factorText = f.message || f.description || f.rule || f.factor_name || (typeof f === 'string' ? f : 'Elevated risk anomaly');
+    const factorImpact = f.score_contribution != null ? f.score_contribution : (f.score_impact != null ? f.score_impact : (f.weight || 0));
+    const impactStr = factorImpact > 0 ? ` (+${factorImpact})` : '';
+    return `<div style="color:#b91c1c;">&bull; ${escapeHtml(factorText)}${impactStr}</div>`;
+  }).join('') : '<div>Zero anomalous risk factors identified.</div>'}
 
   <div class="footer">
     VeriGate Open-Source Identity Intelligence &bull; Confidential Compliance Record &bull; Dual-licensed Apache 2.0 &amp; MIT
