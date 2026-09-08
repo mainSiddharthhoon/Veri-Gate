@@ -37,10 +37,17 @@ This artifact contains the results of running all the test fixtures located in t
 
 ---
 
-## ❌ Test: invalid/both-invalid
+## 🧪 Test: `invalid/both-invalid`
+
 **Expected Outcome**: In the given image both images are not related to our verification process , so it must be denied.
 
-**Error**: `OCR failed: {"detail":"Please provide a valid identity document and a clear photo of the person."}`
+**Actual Decision**: `REJECT` (Input Qualification Gate)
+**Risk Level**: `CRITICAL`
+**Status**: `400 Bad Request`
+
+**Summary**: Non-document and irrelevant images detected. Pre-flight Stage 1 Input Qualification immediately rejected the submission before expensive downstream processing: *"Please provide a valid identity document and a clear photo of the person."*
+
+**Match Result**: ✅ Logically Passed (Matched Expectation Category — denied early by input qualification gate)
 
 ---
 
@@ -48,13 +55,13 @@ This artifact contains the results of running all the test fixtures located in t
 
 **Expected Outcome**: Here in the given images the document is expired in 2024 , so it should be denied.
 
-**Actual Decision**: `APPROVE`
-**Risk Level**: `LOW`
-**Score**: 0/100
+**Actual Decision**: `REJECT`
+**Risk Level**: `CRITICAL`
+**Score**: 95/100
 
-**Summary**: Document verified as an authorized synthetic test fixture. Identity is consistent across all fields, and biometric verification is successful. No tampering detected.
+**Summary**: Document rejected due to critical temporal inconsistency: the document expiration date (January 09, 2024) is in the past relative to the current calendar date. The deterministic date engine and Gemma AI arbiter flagged the credential as expired, failing validity requirements.
 
-**Match Result**: ❌ Logical Mismatch
+**Match Result**: ✅ Logically Passed (Matched Expectation Category)
 
 ---
 
