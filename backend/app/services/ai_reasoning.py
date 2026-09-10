@@ -34,6 +34,23 @@ class InputQualification(BaseModel):
 
 
 def _encode_image(image_bytes: bytes) -> str:
+    try:
+        from PIL import Image
+        import io
+        if len(image_bytes) > 1024 * 1024:
+            img = Image.open(io.BytesIO(image_bytes))
+            max_dim = 1536
+            if max(img.size) > max_dim:
+                scale = max_dim / max(img.size)
+                new_size = (int(img.size[0] * scale), int(img.size[1] * scale))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.save(buf, format="JPEG", quality=85)
+            image_bytes = buf.getvalue()
+    except Exception:
+        pass
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
@@ -68,13 +85,13 @@ def _call_gemini(prompt: str, images: list[bytes], schema: type[BaseModel], mode
     return schema.model_validate_json(response.text)
 
 
-def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel], operation: str = "unknown") -> BaseModel:
-    """Calls Google AI Studio Native REST API for gemma-4-31b-it."""
+def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel], operation: str = "unknown", model_name: str = "gemma-4-31b-it") -> BaseModel:
+    """Calls Google AI Studio Native REST API for models in the Google priority chain."""
     settings = get_settings()
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY is not configured.")
         
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key={settings.gemini_api_key}"
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.gemini_api_key}"
     
     import json
     json_schema = schema.model_json_schema()
@@ -88,8 +105,8 @@ def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel]
     for img_bytes in images:
         b64_image = _encode_image(img_bytes)
         parts.append({
-            "inlineData": {
-                "mimeType": "image/jpeg",
+            "inline_data": {
+                "mime_type": "image/jpeg",
                 "data": b64_image
             }
         })
@@ -106,89 +123,75 @@ def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel]
     headers = {"Content-Type": "application/json"}
     
     import time
-    max_retries = 1
-    for attempt in range(max_retries + 1):
-        try:
-            start_time = time.time()
-            logger.info(f"[AI] Gemma START operation={operation} attempt={attempt+1}")
+    timeout_val = getattr(settings, "google_timeout_seconds", 25.0)
+    http_timeout = httpx.Timeout(timeout_val, connect=10.0)
+    try:
+        start_time = time.time()
+        logger.info(f"[AI] Google START model={model_name} operation={operation}")
+        
+        with httpx.Client(timeout=http_timeout) as client:
+            response = client.post(api_url, headers=headers, json=payload)
             
-            with httpx.Client(timeout=60.0) as client:
-                response = client.post(api_url, headers=headers, json=payload)
-                
-            duration_ms = int((time.time() - start_time) * 1000)
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        if response.status_code == 200:
+            logger.info(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=200 success=True")
+            response_data = response.json()
             
-            if response.status_code == 200:
-                logger.info(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status=200 success=True")
-                response_data = response.json()
+            try:
+                candidates = response_data.get("candidates", [])
+                if not candidates:
+                    raise ValueError(f"No candidates returned: {response_data}")
+                content_parts = candidates[0].get("content", {}).get("parts", [])
+                if not content_parts:
+                    raise ValueError(f"No parts in content: {response_data}")
                 
-                try:
-                    candidates = response_data.get("candidates", [])
-                    if not candidates:
-                        raise ValueError(f"No candidates returned: {response_data}")
-                    content_parts = candidates[0].get("content", {}).get("parts", [])
-                    if not content_parts:
-                        raise ValueError(f"No parts in content: {response_data}")
-                    
-                    result_text = content_parts[0].get("text", "")
-                    
-                    print(f"\n--- GEMMA RAW OUTPUT ({operation}) ---")
-                    print(result_text)
-                    print("--------------------------------------\n")
-                    
-                    # Clean markdown and extract JSON
-                    # Find the first { and last } unconditionally to strip any prefix/suffix garbage
-                    start_idx = result_text.find("{")
-                    end_idx = result_text.rfind("}")
-                    if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
-                        result_text = result_text[start_idx:end_idx+1]
-                    else:
-                        raise ValueError(f"Could not find JSON object in response")
-                    
-                    return schema.model_validate_json(result_text)
-                except Exception as e:
-                    logger.error(f"[AI] Gemma PARSE ERROR: {e}")
-                    raise ValueError(f"Failed to parse Gemma output: {e}")
-                    
-            status = response.status_code
-            error_body = response.text
+                result_text = content_parts[0].get("text", "")
+                
+                print(f"\n--- GOOGLE RAW OUTPUT ({model_name} / {operation}) ---")
+                print(result_text)
+                print("--------------------------------------\n")
+                
+                # Clean markdown and extract JSON
+                start_idx = result_text.find("{")
+                end_idx = result_text.rfind("}")
+                if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+                    result_text = result_text[start_idx:end_idx+1]
+                else:
+                    raise ValueError(f"Could not find JSON object in response")
+                
+                return schema.model_validate_json(result_text)
+            except Exception as e:
+                logger.error(f"[AI] Google PARSE ERROR ({model_name}): {e}")
+                raise ValueError(f"Failed to parse Google model output: {e}")
+                
+        status = response.status_code
+        error_body = response.text
+        
+        if status == 400:
+            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=400 failure_category=REQUEST_FORMAT_PROBLEM error={error_body}")
+            raise ValueError(f"Google 400 Bad Request (FATAL): {error_body}")
+        elif status in (401, 403):
+            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=AUTH_PROBLEM error={error_body}")
+            raise ValueError(f"Google Auth Error (FATAL): {error_body}")
+        elif status == 429:
+            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=429 failure_category=RATE_LIMIT error={error_body}")
+            raise RuntimeError(f"Google {model_name} 429 Rate Limit: {error_body}")
+        elif status in (500, 503):
+            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=SERVER_ERROR error={error_body}")
+            raise RuntimeError(f"Google {model_name} Server Error {status}: {error_body}")
+        else:
+            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=UNKNOWN_HTTP_ERROR error={error_body}")
+            raise RuntimeError(f"Google {model_name} HTTP {status}: {error_body}")
             
-            if status == 400:
-                logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status=400 failure_category=REQUEST_FORMAT_PROBLEM error={error_body}")
-                raise ValueError(f"Gemma 400 Bad Request (FATAL): {error_body}")
-            elif status in (401, 403):
-                logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status={status} failure_category=AUTH_PROBLEM error={error_body}")
-                raise ValueError(f"Gemma Auth Error (FATAL): {error_body}")
-            elif status == 429:
-                logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status=429 failure_category=RATE_LIMIT error={error_body}")
-                if attempt < max_retries:
-                    time.sleep(2)
-                    continue
-                raise RuntimeError("Gemma 429 Rate Limit (RETRY EXHAUSTED)")
-            elif status in (500, 503):
-                logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status={status} failure_category=SERVER_ERROR error={error_body}")
-                if attempt < max_retries:
-                    time.sleep(2)
-                    continue
-                raise RuntimeError(f"Gemma Server Error {status} (RETRY EXHAUSTED)")
-            else:
-                logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status={status} failure_category=UNKNOWN_HTTP_ERROR error={error_body}")
-                raise RuntimeError(f"Gemma HTTP {status}")
-                
-        except httpx.TimeoutException as e:
-            duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status=TIMEOUT failure_category=TIMEOUT error={str(e)}")
-            if attempt < max_retries:
-                continue
-            raise RuntimeError("Gemma Timeout (RETRY EXHAUSTED)")
-        except httpx.RequestError as e:
-            duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"[AI] Gemma END operation={operation} duration={duration_ms}ms status=NETWORK_ERROR failure_category=NETWORK_ERROR error={str(e)}")
-            if attempt < max_retries:
-                time.sleep(1)
-                continue
-            raise RuntimeError(f"Gemma Network Error (RETRY EXHAUSTED): {str(e)}")
-
-    raise RuntimeError("Gemma request failed")
+    except httpx.TimeoutException as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=TIMEOUT failure_category=TIMEOUT error={str(e)}")
+        raise RuntimeError(f"Google {model_name} Timeout: {e}")
+    except httpx.RequestError as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=NETWORK_ERROR failure_category=NETWORK_ERROR error={str(e)}")
+        raise RuntimeError(f"Google {model_name} Network Error: {e}")
 
 
 def _call_openrouter(prompt: str, images: list[bytes], schema: type[BaseModel]) -> BaseModel:
@@ -370,11 +373,12 @@ def _call_ollama_vision(prompt: str, images: list[bytes], schema: type[BaseModel
 
     import time
     start_time = time.time()
-    logger.info(f"[AI] Ollama START operation={operation} timeout={settings.vision_timeout_seconds}s model={settings.vision_model}")
-    print(f"[AI] Ollama START operation={operation} timeout={settings.vision_timeout_seconds}s model={settings.vision_model}")
+    ollama_timeout = min(settings.vision_timeout_seconds, 25.0)
+    logger.info(f"[AI] Ollama START operation={operation} timeout={ollama_timeout}s model={settings.vision_model}")
+    print(f"[AI] Ollama START operation={operation} timeout={ollama_timeout}s model={settings.vision_model}")
 
     try:
-        with httpx.Client(timeout=settings.vision_timeout_seconds) as client:
+        with httpx.Client(timeout=httpx.Timeout(ollama_timeout, connect=5.0)) as client:
             response = client.post(api_url, headers=headers, json=payload)
             response.raise_for_status()
     except httpx.HTTPError as e:
@@ -437,18 +441,21 @@ def _call_ollama_vision(prompt: str, images: list[bytes], schema: type[BaseModel
 
 
 def _call_ai_provider(prompt: str, images: list[bytes], schema: type[BaseModel], operation: str = "unknown") -> tuple[BaseModel, str]:
-    """Tries Gemma first, falls back to Ollama, OpenRouter, then Local AI."""
+    """Tries Google AI Studio models in priority order, falls back to Ollama, OpenRouter, then Local AI."""
+    settings = get_settings()
+    google_models = getattr(settings, "google_models", ["gemma-4-31b-it", "gemma-4-26b-a4b-it", "gemini-3.5-flash-lite"])
     
-    # 1. Try Gemma
-    try:
-        result = _call_gemma_vision(prompt, images, schema, operation=operation)
-        return result, "gemma"
-    except ValueError as ve:
-        # 400 or auth errors are fatal, do not fallback to avoid propagating bad payloads or disguising config issues
-        logger.error(f"Gemma API Fatal Error (NO FALLBACK): {ve}")
-        raise ve
-    except Exception as gemma_e:
-        logger.warning(f"Gemma Vision API failed: {gemma_e}. Attempting Ollama fallback.")
+    # 1. Try Google AI Studio models in priority order: gemma-4-31b-it -> gemma-4-26b-a4b-it -> gemini-3.5-flash-lite
+    for model_name in google_models:
+        try:
+            result = _call_gemma_vision(prompt, images, schema, operation=operation, model_name=model_name)
+            return result, "gemma"
+        except ValueError as ve:
+            # 400 or auth errors are fatal, do not fallback to avoid propagating bad payloads or disguising config issues
+            logger.error(f"Google Model ({model_name}) Fatal Error (NO FALLBACK): {ve}")
+            raise ve
+        except Exception as e:
+            logger.warning(f"Google Model ({model_name}) transient failure: {e}. Attempting next model in chain.")
         
     # 2. Try Ollama Vision
     try:

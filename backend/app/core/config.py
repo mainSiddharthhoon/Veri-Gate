@@ -30,6 +30,12 @@ class Settings(BaseSettings):
 
     # --- AI Reasoning ---
     gemini_api_key: str = ""
+    google_models: list[str] = [
+        "gemma-4-31b-it",
+        "gemma-4-26b-a4b-it",
+        "gemini-3.5-flash-lite",
+    ]
+    google_timeout_seconds: float = 15.0
     local_ai_api_url: str | None = None
     local_ai_model: str | None = None
     openrouter_api_key: str | None = None
