@@ -345,6 +345,9 @@ async function startScreeningProcess() {
 }
 
 function stopScreeningProcess() {
+  if (session.abortController) {
+    session.abortController.abort();
+  }
   screeningActive = false;
   setRunButtonState('idle');
   const standby = document.getElementById('telemetryStandby');
@@ -1080,7 +1083,7 @@ function generatePdfReport(r, payload) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
-    doc.text(`3. DETERMINISTIC CHECKS (${String(payload.documentValidation?.status || '').toUpperCase()})`, margin, y);
+    doc.text(`3. DETERMINISTIC CHECKS — ${String(payload.documentValidation?.status || '').toUpperCase() === 'VALID' ? 'ALL PASSED' : 'FLAGGED'}`, margin, y);
     y += 5;
 
     const checks = payload.documentValidation?.checks || [];
@@ -1248,7 +1251,7 @@ function printAuditReport(r, payload) {
     `).join('')}
   </div>
 
-  <div class="section-title">3. DETERMINISTIC VALIDATION CHECKS (${escapeHtml(String(payload.documentValidation?.status || '').toUpperCase())})</div>
+  <div class="section-title">3. DETERMINISTIC VALIDATION CHECKS — ${escapeHtml(String(payload.documentValidation?.status || '').toUpperCase() === 'VALID' ? 'ALL PASSED' : 'FLAGGED')}</div>
   <div>
     ${(payload.documentValidation?.checks || []).map(c => {
       const isPass = String(c.status || '').toLowerCase() === 'passed';

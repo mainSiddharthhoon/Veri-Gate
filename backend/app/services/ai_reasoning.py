@@ -132,10 +132,10 @@ def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel]
         with httpx.Client(timeout=http_timeout) as client:
             response = client.post(api_url, headers=headers, json=payload)
             
-        duration_ms = int((time.time() - start_time) * 1000)
+        duration_sec = (time.time() - start_time)
         
         if response.status_code == 200:
-            logger.info(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=200 success=True")
+            logger.info(f"[{operation.upper()}] Google / {model_name} -> SUCCESS ({duration_sec:.1f}s)")
             response_data = response.json()
             
             try:
@@ -147,10 +147,6 @@ def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel]
                     raise ValueError(f"No parts in content: {response_data}")
                 
                 result_text = content_parts[0].get("text", "")
-                
-                print(f"\n--- GOOGLE RAW OUTPUT ({model_name} / {operation}) ---")
-                print(result_text)
-                print("--------------------------------------\n")
                 
                 # Clean markdown and extract JSON
                 start_idx = result_text.find("{")
@@ -169,28 +165,28 @@ def _call_gemma_vision(prompt: str, images: list[bytes], schema: type[BaseModel]
         error_body = response.text
         
         if status == 400:
-            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=400 failure_category=REQUEST_FORMAT_PROBLEM error={error_body}")
+            logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR 400 ({duration_sec:.1f}s): {error_body}")
             raise ValueError(f"Google 400 Bad Request (FATAL): {error_body}")
         elif status in (401, 403):
-            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=AUTH_PROBLEM error={error_body}")
+            logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR AUTH ({duration_sec:.1f}s): {error_body}")
             raise ValueError(f"Google Auth Error (FATAL): {error_body}")
         elif status == 429:
-            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=429 failure_category=RATE_LIMIT error={error_body}")
+            logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR 429 ({duration_sec:.1f}s): {error_body}")
             raise RuntimeError(f"Google {model_name} 429 Rate Limit: {error_body}")
         elif status in (500, 503):
-            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=SERVER_ERROR error={error_body}")
+            logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR SERVER ({duration_sec:.1f}s): {error_body}")
             raise RuntimeError(f"Google {model_name} Server Error {status}: {error_body}")
         else:
-            logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status={status} failure_category=UNKNOWN_HTTP_ERROR error={error_body}")
+            logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR {status} ({duration_sec:.1f}s): {error_body}")
             raise RuntimeError(f"Google {model_name} HTTP {status}: {error_body}")
             
     except httpx.TimeoutException as e:
-        duration_ms = int((time.time() - start_time) * 1000)
-        logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=TIMEOUT failure_category=TIMEOUT error={str(e)}")
+        duration_sec = (time.time() - start_time)
+        logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR TIMEOUT ({duration_sec:.1f}s)")
         raise RuntimeError(f"Google {model_name} Timeout: {e}")
     except httpx.RequestError as e:
-        duration_ms = int((time.time() - start_time) * 1000)
-        logger.error(f"[AI] Google END model={model_name} operation={operation} duration={duration_ms}ms status=NETWORK_ERROR failure_category=NETWORK_ERROR error={str(e)}")
+        duration_sec = (time.time() - start_time)
+        logger.error(f"[{operation.upper()}] Google / {model_name} -> ERROR NETWORK ({duration_sec:.1f}s)")
         raise RuntimeError(f"Google {model_name} Network Error: {e}")
 
 
@@ -330,30 +326,7 @@ def _call_ollama_vision(prompt: str, images: list[bytes], schema: type[BaseModel
     except ImportError:
         Image = None
 
-    print(f"\n--- OLLAMA VISION DEBUG: {operation} ---")
-    print(f"Model: {settings.vision_model}")
-    print(f"Timeout: {settings.vision_timeout_seconds}s")
-    print(f"Stream: False")
-    print(f"Prompt length: {len(prompt)} chars")
-    print(f"Image count: {len(images)}")
-    
-    for i, img_bytes in enumerate(images):
-        b64_str = _encode_image(img_bytes)
-        images_b64.append(b64_str)
-        
-        # Debug logging for image properties
-        size_bytes = len(img_bytes)
-        b64_size = len(b64_str)
-        dimensions = "unknown"
-        if Image:
-            try:
-                img = Image.open(io.BytesIO(img_bytes))
-                dimensions = f"{img.size[0]}x{img.size[1]}"
-            except Exception:
-                dimensions = "parse_error"
-                
-        print(f"  Image {i+1}: file_size={size_bytes}B, b64_size={b64_size}B, dimensions={dimensions}")
-    print("-------------------------------------------\n")
+    # Debug logging removed for brevity and clean terminal output.
 
     payload = {
         "model": settings.vision_model,
@@ -374,8 +347,6 @@ def _call_ollama_vision(prompt: str, images: list[bytes], schema: type[BaseModel
     import time
     start_time = time.time()
     ollama_timeout = min(settings.vision_timeout_seconds, 25.0)
-    logger.info(f"[AI] Ollama START operation={operation} timeout={ollama_timeout}s model={settings.vision_model}")
-    print(f"[AI] Ollama START operation={operation} timeout={ollama_timeout}s model={settings.vision_model}")
 
     try:
         with httpx.Client(timeout=httpx.Timeout(ollama_timeout, connect=5.0)) as client:
@@ -415,10 +386,9 @@ def _call_ollama_vision(prompt: str, images: list[bytes], schema: type[BaseModel
         raise
         
     end_time = time.time()
-    duration_ms = int((end_time - start_time) * 1000)
+    duration_sec = (end_time - start_time)
     
-    logger.info(f"[AI] Ollama END operation={operation} duration={duration_ms}ms status={response.status_code} success=True")
-    print(f"[AI] Ollama END operation={operation} duration={duration_ms}ms status={response.status_code} success=True")
+    logger.info(f"[{operation.upper()}] Ollama / {settings.vision_model} -> SUCCESS ({duration_sec:.1f}s)")
         
     response_data = response.json()
     if "message" not in response_data or "content" not in response_data["message"]:

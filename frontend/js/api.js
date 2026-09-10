@@ -101,6 +101,7 @@ let isScreeningInFlight = false;
 async function executeScreening() {
   if (isScreeningInFlight) return;
   isScreeningInFlight = true;
+  session.abortController = new AbortController();
   session.startTime = Date.now();
 
   try {
@@ -116,7 +117,7 @@ async function executeScreening() {
     ocrData.append('live_image', session.face);
     ocrData.append('document_type', 'passport');
 
-    const ocr = await requestJson('/api/ocr/extract', { method: 'POST', body: ocrData });
+    const ocr = await requestJson('/api/ocr/extract', { method: 'POST', body: ocrData, signal: session.abortController.signal });
     const sessionId = ocr.processing && ocr.processing.session_id;
     if (!sessionId) {
       throw new Error((ocr.processing && ocr.processing.errors || []).join(' ') || 'The server did not create a screening session.');
@@ -135,13 +136,13 @@ async function executeScreening() {
     faceData.append('document_image', session.doc);
     faceData.append('live_image', session.face);
     faceData.append('session_id', sessionId);
-    const face = await requestJson('/api/face/verify', { method: 'POST', body: faceData });
+    const face = await requestJson('/api/face/verify', { method: 'POST', body: faceData, signal: session.abortController.signal });
     updateStageProgress(4, 'done', 'Biometric comparison resolved.');
 
     // Stage 5: AI Risk Assessment & Screening Record Retrieval
     updateStageProgress(5, 'running', 'Synthesizing evidence through Gemma AI forensic arbiter...');
-    const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), { method: 'POST' });
-    const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId));
+    const risk = await requestJson('/api/risk/assess/' + encodeURIComponent(sessionId), { method: 'POST', signal: session.abortController.signal });
+    const screening = await requestJson('/api/screening/' + encodeURIComponent(sessionId), { signal: session.abortController.signal });
     updateStageProgress(5, 'done', 'Autonomous verification consensus finalized.');
 
     // Normalization and Results rendering
@@ -150,8 +151,14 @@ async function executeScreening() {
     if (typeof renderDynamicResults === 'function') {
       renderDynamicResults(session.report);
     }
+  } catch (err) {
+    if (err.name === 'AbortError' || err.message === 'Failed to fetch' || err.message.includes('aborted')) {
+      return;
+    }
+    throw err;
   } finally {
     isScreeningInFlight = false;
+    session.abortController = null;
   }
 }
 

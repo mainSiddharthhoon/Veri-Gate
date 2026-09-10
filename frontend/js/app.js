@@ -77,7 +77,7 @@ function setupHeroVideo() {
 /**
  * Bootstrap on DOMContentLoaded.
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupHeroVideo();
   setupUploadPanels();
 
@@ -86,6 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (typeof checkServerConnection === 'function') {
-    checkServerConnection();
+    const connected = await checkServerConnection();
+    if (!connected) {
+      setTimeout(() => {
+        checkServerConnection();
+      }, 1500);
+    }
   }
 });
