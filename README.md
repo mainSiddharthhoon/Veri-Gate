@@ -36,7 +36,7 @@ VeriGate implements a **7-stage sequential evidence analysis chain**. Each stage
                                       │
                                       ▼
   ┌────────────────────────────────────────────────────────────────────────┐
-  │ STAGE 3: MRZ CHECK DIGIT VERIFICATION (Conditional)                   │
+  │ STAGE 3: MRZ CHECK DIGIT VERIFICATION (Conditional)                    │
   │ • Parses Machine Readable Zone when present (ICAO 9303 TD3 format)     │
   │ • Recalculates 7-3-1 weighted Modulo-10 checksums & composite parity   │
   └───────────────────────────────────┬────────────────────────────────────┘
@@ -94,9 +94,9 @@ VeriGate implements a **7-stage sequential evidence analysis chain**. Each stage
 - **HTTP Client**: HTTPX (async & sync connection pools with timeout handling)
 
 ### AI Providers & Vision Models
-- **Primary AI Arbiter**: Google Gemma (`gemma-4-31b-it` via Google AI Studio REST API) / Gemini 3.6 Flash via Google GenAI SDK
-- **Local Fallback**: Ollama Vision API (`qwen2.5-vl-7b-local` or local multimodal models)
-- **Cloud Fallback**: OpenRouter API (`openrouter/free` multimodal endpoint)
+- **Primary AI Arbiter**: Google Gemma (`gemma-4-31b-it` via Google AI Studio REST API)
+- **Secondary Fallback**: Google Gemma (`gemma-4-26b-a4b-it`)
+- **Tertiary Fallback**: Google Gemini (`gemini-3.5-flash-lite`)
 
 ### Frontend
 - **Architecture**: Single-page application, pure vanilla HTML5, CSS3, ES2022 JavaScript
@@ -164,16 +164,6 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 # AI Reasoning — Google AI Studio / Gemini
 # Used for Gemma 4 31B IT input qualification and multimodal arbitration
 GEMINI_API_KEY=your-google-ai-studio-api-key
-
-# AI Reasoning — Local Vision Fallback (Optional)
-VISION_BASE_URL=http://127.0.0.1:11434
-VISION_MODEL=qwen2.5-vl-7b-local
-VISION_API_KEY=
-VISION_TIMEOUT_SECONDS=20.0
-
-# AI Reasoning — OpenRouter Fallback (Optional)
-OPENROUTER_API_KEY=your-openrouter-api-key
-OPENROUTER_MODEL=openrouter/free
 ```
 
 ---
@@ -181,11 +171,11 @@ OPENROUTER_MODEL=openrouter/free
 ## 6. How to Run Backend and Frontend
 
 ### Starting the Server
-Start the Uvicorn ASGI server pointing to the `backend` application directory:
+Start the isolated backend server (which automatically configures TensorFlow stability flags):
 
 ```bash
 # From the repository root with virtual environment activated:
-python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
+python backend/start_server.py
 ```
 
 ### Accessing the Web Application
@@ -215,8 +205,8 @@ Rather than relying on isolated thresholds, Gemma acts as an **intelligent evide
 
 ### Provider Fallback Order
 1. **Primary**: Google AI Studio native REST API (`gemma-4-31b-it`) enforcing strict JSON schema.
-2. **Secondary**: Local Ollama Vision API (`VISION_BASE_URL` with models such as `qwen2.5-vl-7b-local`).
-3. **Tertiary**: OpenRouter API (`openrouter/free`).
+2. **Secondary**: Google AI Studio fallback (`gemma-4-26b-a4b-it`).
+3. **Tertiary**: Google AI Studio lightweight fallback (`gemini-3.5-flash-lite`).
 4. **Fatal Error Handling**: Client format errors (HTTP 400) or authentication errors fail immediately without cascading, preventing disguised misconfigurations.
 
 ---
